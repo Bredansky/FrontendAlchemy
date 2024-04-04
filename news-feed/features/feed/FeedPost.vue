@@ -1,11 +1,7 @@
 <template>
   <div class="feed-post">
     <div class="author-info">
-      <img
-        :src="post.author.profilePhotoUrl"
-        alt="Profile Picture"
-        class="profile-picture"
-      />
+      <img :src="post.author.profilePhotoUrl" alt="Profile Picture" class="profile-picture" />
       <div>
         <p class="author-name">
           {{ post.author.nickname }}
@@ -18,16 +14,14 @@
     <p class="post-text">
       {{ post.content }}
     </p>
-    <img
-      v-if="post.image"
-      :src="post.image"
-      alt="Post Image"
-      class="post-image"
-    />
+    <img v-if="post.image" :src="post.image" alt="Post Image" class="post-image" />
     <div class="reactions">
-      <span class="reaction">Likes: {{ post.reactions.likes }}</span>
-      <span class="reaction">Haha: {{ post.reactions.haha }}</span>
-      <!-- Add more reactions as needed -->
+      <button @click="toggleLike" :class="{ active: liked }">
+        👍 {{ post.reactions.likes }}
+      </button>
+      <button @click="toggleHaha" :class="{ active: reactedHaha }">
+        😂 {{ post.reactions.haha }}
+      </button>
     </div>
   </div>
 </template>
@@ -38,6 +32,32 @@ const { post } = defineProps(["post"]);
 const formatDate = (timestamp) => {
   // You can implement your own date formatting logic here
   return new Date(timestamp * 1000).toLocaleString(); // Convert seconds to milliseconds
+};
+
+
+const liked = ref(false);
+const reactedHaha = ref(false);
+
+const toggleLike = async () => {
+  if (liked.value) {
+    // await api.unlikePost(post.id);
+    post.reactions.likes--
+  } else {
+    // await api.likePost(post.id);
+    post.reactions.likes++
+  }
+  liked.value = !liked.value;
+};
+
+const toggleHaha = async () => {
+  if (reactedHaha.value) {
+    // await api.removeHahaReaction(post.id);
+    post.reactions.haha--
+  } else {
+    post.reactions.haha++
+    // await api.addHahaReaction(post.id);
+  }
+  reactedHaha.value = !reactedHaha.value;
 };
 </script>
 
@@ -91,5 +111,18 @@ const formatDate = (timestamp) => {
 
 .reaction {
   margin-right: 10px;
+}
+
+.reactions button {
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.reactions button.active {
+  background-color: #007bff;
+}
+
+.reactions .active {
+  font-weight: bold;
 }
 </style>

@@ -1,6 +1,6 @@
 import { type InsertPost, type InsertUser, posts, users } from "@/db/schema";
 import { db } from "@/db";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 // Define an aggregation function
 function aggregatePostsAndUsers(
@@ -16,6 +16,7 @@ function aggregatePostsAndUsers(
       content: posts.content,
       image: posts.image_url,
       reactions: posts.reactions,
+      createdAt: posts.createdAt
     };
   });
 }
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event) => {
       .select()
       .from(posts)
       .innerJoin(users, eq(users.id, posts.authorId))
-      .orderBy(posts.id) // Assuming 'id' is the primary key
+      .orderBy(desc(posts.createdAt)) // Assuming 'id' is the primary key
       .limit(Number(size) + 1); // Fetch one extra to check if there's more data
 
     if (cursor) {
@@ -44,7 +45,9 @@ export default defineEventHandler(async (event) => {
       // If we fetched more than requested, there are more results available
       const lastResult = aggregatedResult.pop();
       nextCursor =
-        lastResult && lastResult.id ? lastResult.id.toString() : null; // Assuming 'id' is the cursor
+      lastResult && lastResult.createdAt
+      ? lastResult.createdAt.toString()
+      : null; // Assuming 'createdAt' is the cursor
     }
 
     return {

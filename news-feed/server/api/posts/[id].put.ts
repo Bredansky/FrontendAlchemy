@@ -1,6 +1,7 @@
 import { type InsertPost, posts } from "@/db/schema";
 import { db } from "@/db";
 import { eq } from "drizzle-orm";
+
 export default defineEventHandler(async (event) => {
   try {
     const postId = event.context.params?.id as string;
