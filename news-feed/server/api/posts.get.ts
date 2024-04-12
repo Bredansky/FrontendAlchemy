@@ -1,8 +1,7 @@
 import { type InsertPost, type InsertUser, posts, users } from "@/db/schema";
 import { db } from "@/db";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql, or } from "drizzle-orm";
 
-// Define an aggregation function
 function aggregatePostsAndUsers(
   postsAndUsers: { posts: InsertPost; users: InsertUser }[],
 ) {
@@ -29,25 +28,34 @@ export default defineEventHandler(async (event) => {
       .select()
       .from(posts)
       .innerJoin(users, eq(users.id, posts.authorId))
-      .orderBy(desc(posts.createdAt)) // Assuming 'id' is the primary key
+      .orderBy(desc(posts.createdAt), desc(posts.id)) // Using 'id' as a tiebreaker
       .limit(Number(size) + 1); // Fetch one extra to check if there's more data
 
     if (cursor) {
-      query = query.where(sql`${posts.id} > ${cursor}`) as typeof query;
+      const [cursorCreatedAt, cursorId] = cursor.toString().split('_');
+      query = query
+        .where(
+        or(
+          sql`${posts.createdAt} < ${cursorCreatedAt}`,
+          sql`${posts.createdAt} = ${cursorCreatedAt} AND ${posts.id} < ${cursorId}`,
+        )) as typeof query;
+        // Maybe assertsion can be fixed like this https://github.com/drizzle-team/drizzle-orm/issues/1437
     }
 
     const results = await query.all();
+
     const aggregatedResult = aggregatePostsAndUsers(results);
 
     let nextCursor = null;
 
     if (results.length > Number(size)) {
       // If we fetched more than requested, there are more results available
-      const lastResult = aggregatedResult.pop();
+      const lastResult = aggregatedResult[aggregatedResult.length-1];
+      console.log('lastResult', lastResult)
       nextCursor =
-      lastResult && lastResult.createdAt
-      ? lastResult.createdAt.toString()
-      : null; // Assuming 'createdAt' is the cursor
+        lastResult && lastResult.createdAt && lastResult.id
+          ? `${lastResult.createdAt}_${lastResult.id}` // Constructing next cursor
+          : null;
     }
 
     return {

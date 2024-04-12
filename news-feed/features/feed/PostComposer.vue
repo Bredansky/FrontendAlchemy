@@ -1,48 +1,38 @@
 <template>
     <div class="post-composer">
         <textarea v-model="content" placeholder="Write your post here"></textarea>
-        <input type="file" @change="handleFileUpload">
-        <button @click="postNewPost">Post</button>
+        <div :style="{ display: 'flex', justifyContent: 'space-between' }">
+            <label>
+                <input type="checkbox" v-model="addFancyPicture">
+                Add fancy picture
+            </label>
+            <button @click="postNewPost">Post</button>
+        </div>
     </div>
 </template>
-  
+
 <script setup>
+const content = ref(null);
 
-const content = ref('');
-let image = null;
-
-const handleFileUpload = (event) => {
-    const files = event.target.files;
-    if (files.length > 0) {
-        image = files[0];
-    }
-};
+let addFancyPicture = ref(false); // Initialize the checkbox state
 
 const postNewPost = async () => {
-    try {
-
-        const response = await $fetch('api/posts', {
-            method: 'POST', body: {
-                image_url: image,
-                content: content.value,
-                authorId: 1,
-            }
-        });
-
-        // Update the post state with the newly added post
-        const newPost = response.data; // Assuming the response contains the newly added post
-        // Add logic to update the post state with the new post
-
-        // Reset content and image after successful post
+    await $fetch('api/posts', {
+        method: 'POST',
+        body: {
+            addFancyPicture: addFancyPicture.value,
+            content: content.value,
+            authorId: 1,
+        }
+    }).then(res => {
         content.value = '';
-        image = null;
-    } catch (error) {
+
+    }).catch(error => {
         console.error('Error posting new post:', error);
-        // Handle error, show error message to user, etc.
-    }
+    })
 };
 </script>
-  
+
 <style scoped>
 .post-composer {
     margin-bottom: 20px;
@@ -67,4 +57,3 @@ button:hover {
     background-color: #0056b3;
 }
 </style>
-  

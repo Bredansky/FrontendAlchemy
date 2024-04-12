@@ -19,6 +19,7 @@ posts.value = [...posts.value, ...data.value.posts];
 cursor.value = data.value.pagination.next_cursor;
 
 async function fetchPosts(size, nextCursor) {
+    console.log(nextCursor)
     $fetch("/api/posts", {
         query: { size, cursor: nextCursor },
     }).then((res) => {
@@ -33,6 +34,7 @@ onMounted(() => {
         (entries) => {
             // When the sentinel element is intersecting with the viewport, fetch more posts
             if (entries[0].isIntersecting && cursor.value) {
+                console.log('aaaaaaa')
                 fetchPosts("10", cursor.value);
             }
         },
