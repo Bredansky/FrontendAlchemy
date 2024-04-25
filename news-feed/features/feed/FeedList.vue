@@ -7,44 +7,37 @@
 </template>
 
 <script setup>
-const posts = ref([]);
-const cursor = ref(null);
+const posts = useState('posts', () => []);
+const cursor = useState('cursor', () => null);
 const sentinel = ref(null);
 
-const { data } = await useFetch("/api/posts", {
-    query: { size: 10 },
-});
-
-posts.value = [...posts.value, ...data.value.posts];
-cursor.value = data.value.pagination.next_cursor;
-
-async function fetchPosts(size, nextCursor) {
-    console.log(nextCursor)
-    $fetch("/api/posts", {
+const fetchData = async (size, nextCursor) => {
+    const res = await $fetch("/api/posts", {
         query: { size, cursor: nextCursor },
-    }).then((res) => {
-        posts.value = [...posts.value, ...res.posts];
-        cursor.value = res.pagination.next_cursor;
     });
+    return res;
 }
 
-onMounted(() => {
-    // Initialize IntersectionObserver
+const fetchPosts = async () => {
+    const data = await fetchData(10, cursor.value || null);
+    posts.value = [...posts.value, ...data.posts];
+    cursor.value = data.pagination.next_cursor;
+}
+
+onMounted(async () => {
+    await fetchPosts();
     const observer = new IntersectionObserver(
         (entries) => {
-            // When the sentinel element is intersecting with the viewport, fetch more posts
             if (entries[0].isIntersecting && cursor.value) {
-                console.log('aaaaaaa')
-                fetchPosts("10", cursor.value);
+                fetchPosts();
             }
         },
-        { threshold: 0.5 }, // Define the threshold for intersection
+        { threshold: 0.5 }
     );
-
-    // Observe the sentinel element
     observer.observe(sentinel.value);
 });
 </script>
+
 
 <style scoped>
 .feed-list {

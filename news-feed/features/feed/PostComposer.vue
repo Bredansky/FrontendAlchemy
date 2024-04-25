@@ -12,26 +12,44 @@
 </template>
 
 <script setup>
-const content = ref(null);
 
-let addFancyPicture = ref(false); // Initialize the checkbox state
+const posts = useState('posts', () => []);
+const content = useState('content', () => '');
+const addFancyPicture = useState('addFancyPicture', () => false);
 
 const postNewPost = async () => {
-    await $fetch('api/posts', {
-        method: 'POST',
-        body: {
-            addFancyPicture: addFancyPicture.value,
-            content: content.value,
-            authorId: 1,
-        }
-    }).then(res => {
-        content.value = '';
+    // Optimistic update
+    const newPost = {
+        id: Math.random().toString(36).substr(2, 9), // Temporary ID
+        content: content.value,
+        author: { id: 1, name: 'User' }, // Assuming user ID and name are available
+        reactions: { likes: 0, haha: 0 },
+        created_time: Date.now() / 1000 // Current timestamp
+    };
+    posts.value = [newPost, ...posts.value];
 
-    }).catch(error => {
+    // Save to server
+    try {
+        await $fetch('api/posts', {
+            method: 'POST',
+            body: {
+                addFancyPicture: addFancyPicture.value,
+                content: content.value,
+                authorId: 1,
+            }
+        });
+        // Data successfully saved
+    } catch (error) {
+        // Revert changes on error
+        posts.value = posts.value.filter(post => post.id !== newPost.id);
         console.error('Error posting new post:', error);
-    })
+    }
+
+    // Clear input
+    content.value = '';
 };
 </script>
+
 
 <style scoped>
 .post-composer {
