@@ -5,9 +5,10 @@ import { faker } from "@faker-js/faker";
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
+    console.log('aaaaa', body)
     const newPost: InsertPost = {
       ...body,
-      ...(body.addFancyPicture && { image_url: faker.image.urlPicsumPhotos(), content: '' } ) 
+      ...(body.addFancyPicture && { image_url: faker.image.urlPicsumPhotos() } ) 
     };
     const result = db.insert(posts).values(newPost).run();
     return { newpost: result };

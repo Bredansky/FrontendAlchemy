@@ -24,7 +24,18 @@ const fetchPosts = async () => {
     cursor.value = data.pagination.next_cursor;
 }
 
+// Define state for the user
+const user = useState('user', () => null);
+
+
 onMounted(async () => {
+    // try {
+    //     const response = await $fetch('/api/users/1');
+    //     // Update the user state with the fetched user data
+    //     user.value = response;
+    // } catch (error) {
+    //     console.error('Error fetching user:', error);
+    // }
     await fetchPosts();
     const observer = new IntersectionObserver(
         (entries) => {

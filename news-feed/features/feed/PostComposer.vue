@@ -14,15 +14,17 @@
 <script setup>
 
 const posts = useState('posts', () => []);
-const content = useState('content', () => '');
-const addFancyPicture = useState('addFancyPicture', () => false);
+const user = useState('user', () => null);
+console.log(user.value)
+const content = ref('');
+const addFancyPicture = ref(false);
 
 const postNewPost = async () => {
     // Optimistic update
     const newPost = {
         id: Math.random().toString(36).substr(2, 9), // Temporary ID
         content: content.value,
-        author: { id: 1, name: 'User' }, // Assuming user ID and name are available
+        author: user.value, // Assuming user ID and name are available
         reactions: { likes: 0, haha: 0 },
         created_time: Date.now() / 1000 // Current timestamp
     };
