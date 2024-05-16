@@ -26,7 +26,7 @@ const fetchPosts = async () => {
 
 // Define state for the user
 const user = useState('user', () => null);
-
+user.value = await $fetch('/api/users/4').then(result => result.user)
 
 onMounted(async () => {
     // try {

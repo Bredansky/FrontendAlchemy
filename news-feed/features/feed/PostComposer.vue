@@ -12,22 +12,27 @@
 </template>
 
 <script setup>
+import { faker } from '@faker-js/faker';
+
 
 const posts = useState('posts', () => []);
 const user = useState('user', () => null);
-console.log(user.value)
 const content = ref('');
 const addFancyPicture = ref(false);
 
 const postNewPost = async () => {
     // Optimistic update
+    const randomImage = faker.image.urlPicsumPhotos()
+
     const newPost = {
-        id: Math.random().toString(36).substr(2, 9), // Temporary ID
+        id: Math.random().toString(36).substr(2, 9),
         content: content.value,
-        author: user.value, // Assuming user ID and name are available
+        author: { ...user.value },
         reactions: { likes: 0, haha: 0 },
-        created_time: Date.now() / 1000 // Current timestamp
+        created_time: Date.now() / 1000,
+        image: addFancyPicture.value ? randomImage : null
     };
+
     posts.value = [newPost, ...posts.value];
 
     // Save to server
@@ -35,9 +40,9 @@ const postNewPost = async () => {
         await $fetch('api/posts', {
             method: 'POST',
             body: {
-                addFancyPicture: addFancyPicture.value,
+                image_url: addFancyPicture.value ? randomImage : null,
                 content: content.value,
-                authorId: 1,
+                authorId: user.value.id,
             }
         });
         // Data successfully saved
