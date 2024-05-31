@@ -8,9 +8,11 @@ import {
 
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
-  nickname: text("first_name").notNull(),
+  nickname: text("nickname").notNull(),
   profilePhotoUrl: text("profile_photo_url").notNull(),
-  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at")
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
 });
 
 export type SelectUser = typeof users.$inferSelect;
@@ -22,13 +24,28 @@ export const posts = sqliteTable("posts", {
     .notNull()
     .references((): AnySQLiteColumn => users.id),
   content: text("content").notNull(),
-  image_url: text("image_url"),
-  reactions: text("reactions", { mode: "json" })
-    .$type<{ likes: number; haha: number }>()
-    .default(sql`'{"likes": 0, "haha": 0}'`)
+  imageUrl: text("image_url"),
+  createdAt: text("created_at")
+    .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export type SelectPost = typeof posts.$inferSelect;
 export type InsertPost = typeof posts.$inferInsert;
+
+export const reactions = sqliteTable("reactions", {
+  id: integer("id").primaryKey(),
+  postId: integer("post_id")
+    .notNull()
+    .references((): AnySQLiteColumn => posts.id),
+  userId: integer("user_id")
+    .notNull()
+    .references((): AnySQLiteColumn => users.id),
+  type: text("type").notNull(),
+  createdAt: text("created_at")
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export type SelectReaction = typeof reactions.$inferSelect;
+export type InsertReaction = typeof reactions.$inferInsert;

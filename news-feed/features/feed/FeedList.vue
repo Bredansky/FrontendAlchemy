@@ -13,7 +13,7 @@ const sentinel = ref(null);
 
 const fetchData = async (size, nextCursor) => {
     const res = await $fetch("/api/posts", {
-        query: { size, cursor: nextCursor },
+        query: { size, cursor: nextCursor, userId: user.value.id },
     });
     return res;
 }

@@ -7,59 +7,80 @@
           {{ post.author.nickname }}
         </p>
         <p class="post-time">
-          {{ formatDate(post.created_time) }}
+          {{ formatDate(post.createdAt) }}
         </p>
       </div>
     </div>
     <p class="post-text">
       {{ post.content }}
     </p>
-    <img v-if="post.image" :src="post.image" alt="Post Image" class="post-image" />
+    <img v-if="post.imageUrl" :src="post.imageUrl" alt="Post Image" class="post-image" />
     <div class="reactions">
-      <button @click="toggleLike" :class="{ active: liked }">
+      <button @click="toggleReaction('like')" :class="{ active: userReactions.like }">
         👍 {{ post.reactions.likes }}
       </button>
-      <button @click="toggleHaha" :class="{ active: reactedHaha }">
-        😂 {{ post.reactions.haha }}
+      <button @click="toggleReaction('haha')" :class="{ active: userReactions.haha }">
+        😂 {{ post.reactions.hahas }}
       </button>
     </div>
   </div>
 </template>
 
-<script setup>
-const { post } = defineProps(["post"]);
+<script setup lang="ts">
+import type { AuthoredPost } from '~/server/api/posts.get';
 
-const formatDate = (timestamp) => {
-  // You can implement your own date formatting logic here
-  return new Date(timestamp * 1000).toLocaleString(); // Convert seconds to milliseconds
+
+const props = defineProps<{
+  post: AuthoredPost;
+}>();
+
+const userReactions = ref({
+  like: props.post.currentUserReaction.liked,
+  haha: props.post.currentUserReaction.hahaed,
+});
+
+const user = useState('user', () => ({ id: 4 }));
+
+const formatDate = (timestamp: string) => {
+  const date = new Date(timestamp);
+  return date.toLocaleString(); // You can specify locale and options here if needed
 };
 
+const toggleReaction = async (reactionType: "like" | "haha") => {
+  try {
+    const isActive = userReactions.value[reactionType];
+    const action = isActive ? 'unreact' : 'react';
+    const userId = user.value.id; // Replace with actual user ID
 
-const liked = ref(false);
-const reactedHaha = ref(false);
+    // Optimistically update the UI
+    if (reactionType === 'like') {
+      props.post.reactions.likes += isActive ? -1 : 1;
+      userReactions.value.like = !isActive;
+    } else if (reactionType === 'haha') {
+      props.post.reactions.hahas += isActive ? -1 : 1;
+      userReactions.value.haha = !isActive;
+    }
 
-const toggleLike = async () => {
-  if (liked.value) {
-    // await api.unlikePost(post.id);
-    post.reactions.likes--
-  } else {
-    // await api.likePost(post.id);
-    post.reactions.likes++
+    await $fetch(`/api/posts/${props.post.id}/react`, {
+      method: 'PUT',
+      body: JSON.stringify({ action, reactionType, userId }),
+    });
+
+  } catch (error) {
+    console.error(`Error toggling ${reactionType} reaction:`, error);
+
+    // Revert the optimistic update if the API call fails
+    if (reactionType === 'like') {
+      props.post.reactions.likes += userReactions.value.like ? -1 : 1;
+      userReactions.value.like = !userReactions.value.like;
+    } else if (reactionType === 'haha') {
+      props.post.reactions.hahas += userReactions.value.haha ? -1 : 1;
+      userReactions.value.haha = !userReactions.value.haha;
+    }
   }
-  liked.value = !liked.value;
-};
-
-const toggleHaha = async () => {
-  if (reactedHaha.value) {
-    // await api.removeHahaReaction(post.id);
-    post.reactions.haha--
-  } else {
-    post.reactions.haha++
-    // await api.addHahaReaction(post.id);
-  }
-  reactedHaha.value = !reactedHaha.value;
 };
 </script>
+
 
 <style scoped>
 .feed-post {

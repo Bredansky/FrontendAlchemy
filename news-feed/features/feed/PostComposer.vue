@@ -28,7 +28,6 @@ const postNewPost = async () => {
         id: Math.random().toString(36).substr(2, 9),
         content: content.value,
         author: { ...user.value },
-        reactions: { likes: 0, haha: 0 },
         created_time: Date.now() / 1000,
         image: addFancyPicture.value ? randomImage : null
     };
