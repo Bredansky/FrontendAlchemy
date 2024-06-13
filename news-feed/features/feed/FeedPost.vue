@@ -14,7 +14,7 @@
     <p class="post-text">
       {{ post.content }}
     </p>
-    <img v-if="post.imageUrl" :src="post.imageUrl" alt="Post Image" class="post-image" />
+    <img v-if="post.imageUrl" :src="post.imageUrl" alt="Post Image" class="post-image" width="500px" />
     <div class="reactions">
       <button @click="toggleReaction('like')" :class="{ active: userReactions.like }">
         👍 {{ post.reactions.likes }}
