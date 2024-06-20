@@ -1,177 +1,190 @@
 <template>
-    <div ref="listContainer" class="custom-virtual-list" @scroll="handleScroll">
-        <div v-for="item in visibleItemsWithPlaceholders" :key="item.id" :style="{ height: item.height + 'px' }">
-            <div v-if="item.isPlaceholder" class="placeholder"></div>
-            <div v-else>
-                <FeedPost :post="item" />
-            </div>
+  <div ref="root" class="root" :style="rootStyle">
+    <div ref="viewport" class="viewport" :style="viewportStyle">
+      <div ref="spacer" class="spacer" :style="spacerStyle">
+        <div v-for="item in visibleItems" :key="item">
+          {{ item }}
         </div>
-        <div ref="sentinel" class="sentinel"></div>
+      </div>
     </div>
+    <div ref="sentinel" class="sentinel"></div>
+    <!-- Sentinel element -->
+
+    <div v-show="loading" class="loading">Loading...</div>
+  </div>
 </template>
 
 <script setup>
-const listContainer = ref(null);
-const sentinel = ref(null);
-const user = useState('user', () => null);
+import { ref, computed, onMounted, onUnmounted } from "vue";
 
+const sentinel = ref(null); // Define sentinel ref
 
-user.value = await $fetch('/api/users/4').then(result => result.user);
+const items = ref(
+  new Array(50).fill(null).map((item, index) => `Item ${index + 1}`),
+);
+const rootHeight = 400;
+const rowHeight = ref(30);
+const scrollTop = ref(0);
+const nodePadding = 0;
+const loading = ref(false);
 
-const state = reactive({
-    posts: [],
-    startIndex: 0,
-    endIndex: 10,
-    totalHeight: 0,
-    nextCursor: null,
-    size: 10,
-});
+const root = ref(null); // Define root ref
+const viewport = ref(null); // Define viewport ref
+const spacer = ref(null); // Define spacer ref
 
-const fetchPosts = async () => {
-    try {
-        const response = await $fetch("/api/posts", {
-            query: { size: state.size, cursor: state.nextCursor, userId: user.value.id },
-        });
+const viewportHeight = computed(() => itemCount.value * rowHeight.value);
+const itemCount = computed(() => items.value.length);
+const startIndex = computed(
+  () => Math.floor(scrollTop.value / rowHeight.value) - nodePadding,
+);
+const visibleNodeCount = computed(
+  () => Math.ceil(rootHeight / rowHeight.value) + 2 * nodePadding,
+);
+const visibleItems = computed(() =>
+  items.value.slice(
+    startIndex.value,
+    startIndex.value + visibleNodeCount.value,
+  ),
+);
+const offsetY = computed(() => startIndex.value * rowHeight.value);
 
-        if (response.posts && response.posts.length > 0) {
-            state.posts.push(...response.posts);
-            state.nextCursor = response.pagination.next_cursor;
-        } else {
-            state.nextCursor = null; // No more items to load
-        }
-    } catch (error) {
-        console.error('Failed to fetch posts:', error);
-        state.nextCursor = null; // Stop further fetching on error
+const rootStyle = computed(() => ({
+  height: `${rootHeight}px`,
+  overflow: "auto",
+}));
+
+const viewportStyle = computed(() => ({
+  overflow: "hidden",
+  height: `${viewportHeight.value}px`,
+  position: "relative",
+}));
+
+const spacerStyle = computed(() => ({
+  transform: `translateY(${offsetY.value}px)`,
+}));
+
+const loadMore = () => {
+  loading.value = true;
+  setTimeout(() => {
+    const newItems = [];
+    for (let i = 1; i <= 50; i++) {
+      newItems.push(`Item ${items.value.length + i}`);
     }
+    items.value = [...items.value, ...newItems];
+    loading.value = false;
+  }, 1000); // Simulating async load
 };
-
-const visibleItemsWithPlaceholders = computed(() => {
-    const items = [];
-    let accumulatedHeight = 0;
-
-    for (let i = 0; i < state.posts.length; i++) {
-        const height = calculateItemHeight(state.posts[i]);
-        if (i >= state.startIndex && i < state.endIndex) {
-            items.push({ ...state.posts[i], height });
-        } else {
-            items.push({ id: `placeholder-${i}`, isPlaceholder: true, height });
-        }
-        accumulatedHeight += height;
-    }
-
-    state.totalHeight = accumulatedHeight;
-    console.log(items)
-    return items;
-});
 
 const handleScroll = () => {
-    const container = listContainer.value;
-    if (!container) return;
-
-    const scrollTop = container.scrollTop;
-    const visibleHeight = container.clientHeight;
-
-    // Calculate the visible area boundaries
-    const startBoundary = scrollTop;
-    const endBoundary = scrollTop + visibleHeight;
-
-    // Determine the start index based on the start boundary
-    let accumulatedHeight = 0;
-    let start = 0;
-
-    for (let i = 0; i < state.posts.length; i++) {
-        const itemHeight = calculateItemHeight(state.posts[i]);
-        if (accumulatedHeight + itemHeight >= startBoundary) {
-            start = i;
-            break;
-        }
-        accumulatedHeight += itemHeight;
-    }
-
-    // Determine the end index based on the end boundary
-    accumulatedHeight = 0;
-    let end = state.posts.length;
-
-    for (let i = start; i < state.posts.length; i++) {
-        const itemHeight = calculateItemHeight(state.posts[i]);
-        accumulatedHeight += itemHeight;
-        if (accumulatedHeight >= endBoundary) {
-            end = i + 1;
-            break;
-        }
-    }
-
-    state.startIndex = start;
-    state.endIndex = end;
+  //   const bottomOfWindow =
+  //     root.value.scrollTop + root.value.offsetHeight === root.value.scrollHeight;
+  //   if (bottomOfWindow && !loading.value) {
+  //     loadMore();
+  //   }
+  scrollTop.value = root.value.scrollTop;
 };
 
-const calculateItemHeight = (item) => {
-    return 600;
-    const baseHeight = 50; // Example base height for item
-    const lines = item.content ? item.content.split(' ').length / 5 : 0; // Example: 5 words per line
-    const imageHeight = item.imageUrl ? 150 : 0; // Example height if image is present
-    return baseHeight + lines * 20 + imageHeight; // Adjust the height calculation based on your content
-};
+onMounted(() => {
+  const doesBrowserSupportPassiveScroll = () => {
+    let passiveSupported = false;
 
-const loadMoreItems = async () => {
-    await fetchPosts();
-    // No more items to fetch
-    // if (!state.nextCursor) {
-    //     if (observer.value) {
-    //         observer.value.disconnect();
-    //     }
-    // }
-};
-
-onMounted(async () => {
-    await loadMoreItems();
-
-    const observer = new IntersectionObserver(
-        (entries) => {
-            if (entries[0].isIntersecting && state.nextCursor) {
-                fetchPosts();
-            }
+    try {
+      const options = {
+        get passive() {
+          passiveSupported = true;
+          return false;
         },
-        { threshold: 0.5 }
-    );
-    observer.observe(sentinel.value);
+      };
 
-    handleScroll();
+      window.addEventListener("test", null, options);
+      window.removeEventListener("test", null, options);
+    } catch (err) {
+      passiveSupported = false;
+    }
+
+    return passiveSupported;
+  };
+
+  const largestHeight = calculateInitialRowHeight();
+  rowHeight.value = largestHeight || 30; // Default to 30 if no items are rendered initially
+  root.value.addEventListener(
+    "scroll",
+    handleScroll,
+    doesBrowserSupportPassiveScroll() ? { passive: true } : false,
+  );
+
+  const intersectionObserver = new IntersectionObserver(
+    (entries) => {
+      console.log("helwwow", entries[0].isIntersecting);
+
+      if (entries[0].isIntersecting && !loading.value) {
+        loadMore();
+      }
+    },
+    { threshold: 0.5 },
+  );
+
+  intersectionObserver.observe(sentinel.value);
 });
 
-watch(
-    () => state.posts.length,
-    () => {
-        handleScroll();
-    }
-);
+onUnmounted(() => {
+  root.value.removeEventListener("scroll", handleScroll);
+});
 
-// onBeforeUnmount(() => {
-//     if (observer.value) {
-//         observer.value.disconnect();
-//     }
-// });
+const calculateInitialRowHeight = () => {
+  const children = spacer.value.children;
+  let largestHeight = 0;
+  for (let i = 0; i < children.length; i++) {
+    if (children[i].offsetHeight > largestHeight) {
+      largestHeight = children[i].offsetHeight;
+    }
+  }
+  return largestHeight;
+};
 </script>
 
 <style scoped>
-.custom-virtual-list {
-    height: 600px;
-    /* Example height for the virtualized list */
-    overflow-y: auto;
-    /* Enable scroll for virtualization */
-    position: relative;
-    /* Position relative for scroll offset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.placeholder {
-    border: 1px dashed #ccc;
-    /* Example dashed border */
-    margin-bottom: 10px;
-    /* Adjust margin to maintain spacing */
+html,
+body {
+  height: 100%;
 }
 
-.sentinel {
-    height: 1px;
-    /* Sentinel height for IntersectionObserver */
+body {
+  font-family: "Noto Sans", "Tahoma", sans-serif;
+  display: flex;
+  flex-direction: column;
+  color: rgba(0, 0, 0, 0.6);
+  padding: 1.25rem;
+}
+
+.root {
+  height: 100%;
+  overflow: auto;
+}
+
+.viewport {
+  background: #fefefe;
+  overflow-y: auto;
+}
+
+.spacer > div {
+  padding: 0.5rem 0rem;
+  border: 1px solid #f5f5f5;
+}
+
+.loading {
+  background: yellow;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.sentiel {
+  height: 1px;
 }
 </style>

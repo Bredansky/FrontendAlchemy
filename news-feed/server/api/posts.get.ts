@@ -6,7 +6,7 @@ import {
   type SelectUser,
 } from "@/db/schema";
 import { db } from "@/db";
-import { desc, eq, sql, or, and, count, exists } from "drizzle-orm";
+import { desc, eq, sql, or, and, exists } from "drizzle-orm";
 
 export interface AuthoredPost extends SelectPost {
   author: Pick<SelectUser, "nickname" | "profilePhotoUrl">;
@@ -47,9 +47,9 @@ export default defineEventHandler(async (event) => {
               and(
                 eq(reactions.postId, posts.id),
                 eq(reactions.userId, validUserId),
-                eq(reactions.type, "like")
-              )
-            )
+                eq(reactions.type, "like"),
+              ),
+            ),
         ),
         hahaed: exists(
           db
@@ -59,9 +59,9 @@ export default defineEventHandler(async (event) => {
               and(
                 eq(reactions.postId, posts.id),
                 eq(reactions.userId, validUserId),
-                eq(reactions.type, "haha")
-              )
-            )
+                eq(reactions.type, "haha"),
+              ),
+            ),
         ),
       })
       .from(posts)
@@ -74,8 +74,8 @@ export default defineEventHandler(async (event) => {
       query = query.where(
         or(
           sql`${posts.createdAt} < ${cursorCreatedAt}`,
-          sql`${posts.createdAt} = ${cursorCreatedAt} AND ${posts.id} < ${cursorId}`
-        )
+          sql`${posts.createdAt} = ${cursorCreatedAt} AND ${posts.id} < ${cursorId}`,
+        ),
       ) as typeof query;
     }
 

@@ -1,7 +1,11 @@
 <template>
   <div class="feed-post">
     <div class="author-info">
-      <img :src="post.author.profilePhotoUrl" alt="Profile Picture" class="profile-picture" />
+      <img
+        :src="post.author.profilePhotoUrl"
+        alt="Profile Picture"
+        class="profile-picture"
+      />
       <div>
         <p class="author-name">
           {{ post.author.nickname }}
@@ -11,15 +15,28 @@
         </p>
       </div>
     </div>
-    <p class="post-text">
+    <!-- <p class="post-text">
       {{ post.content }}
-    </p>
-    <img v-if="post.imageUrl" :src="post.imageUrl" alt="Post Image" class="post-image" width="500px" />
+    </p> -->
+    <img
+      v-if="post.imageUrl"
+      :src="post.imageUrl"
+      alt="Post Image"
+      class="post-image"
+      width="357px"
+      height="268px"
+    />
     <div class="reactions">
-      <button @click="toggleReaction('like')" :class="{ active: userReactions.like }">
+      <button
+        :class="{ active: userReactions.like }"
+        @click="toggleReaction('like')"
+      >
         👍 {{ post.reactions.likes }}
       </button>
-      <button @click="toggleReaction('haha')" :class="{ active: userReactions.haha }">
+      <button
+        :class="{ active: userReactions.haha }"
+        @click="toggleReaction('haha')"
+      >
         😂 {{ post.reactions.hahas }}
       </button>
     </div>
@@ -27,8 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import type { AuthoredPost } from '~/server/api/posts.get';
-
+import type { AuthoredPost } from "~/server/api/posts.get";
 
 const props = defineProps<{
   post: AuthoredPost;
@@ -39,7 +55,7 @@ const userReactions = ref({
   haha: props.post.currentUserReaction.hahaed,
 });
 
-const user = useState('user', () => ({ id: 4 }));
+const user = useState("user", () => ({ id: 4 }));
 
 const formatDate = (timestamp: string) => {
   const date = new Date(timestamp);
@@ -49,31 +65,30 @@ const formatDate = (timestamp: string) => {
 const toggleReaction = async (reactionType: "like" | "haha") => {
   try {
     const isActive = userReactions.value[reactionType];
-    const action = isActive ? 'unreact' : 'react';
+    const action = isActive ? "unreact" : "react";
     const userId = user.value.id; // Replace with actual user ID
 
     // Optimistically update the UI
-    if (reactionType === 'like') {
+    if (reactionType === "like") {
       props.post.reactions.likes += isActive ? -1 : 1;
       userReactions.value.like = !isActive;
-    } else if (reactionType === 'haha') {
+    } else if (reactionType === "haha") {
       props.post.reactions.hahas += isActive ? -1 : 1;
       userReactions.value.haha = !isActive;
     }
 
     await $fetch(`/api/posts/${props.post.id}/react`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({ action, reactionType, userId }),
     });
-
   } catch (error) {
     console.error(`Error toggling ${reactionType} reaction:`, error);
 
     // Revert the optimistic update if the API call fails
-    if (reactionType === 'like') {
+    if (reactionType === "like") {
       props.post.reactions.likes += userReactions.value.like ? -1 : 1;
       userReactions.value.like = !userReactions.value.like;
-    } else if (reactionType === 'haha') {
+    } else if (reactionType === "haha") {
       props.post.reactions.hahas += userReactions.value.haha ? -1 : 1;
       userReactions.value.haha = !userReactions.value.haha;
     }
@@ -81,19 +96,18 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
 };
 </script>
 
-
 <style scoped>
 .feed-post {
   border: 1px solid #ccc;
   border-radius: 8px;
   margin-bottom: 20px;
-  padding: 15px;
+  padding: 8px;
 }
 
 .author-info {
   display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .profile-picture {
@@ -106,21 +120,25 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
 .author-name {
   font-weight: bold;
   margin-bottom: 5px;
+  line-height: 24px;
+  margin: 0;
 }
 
 .post-time {
   color: #888;
   font-size: 12px;
+  line-height: 18px;
+  margin: 0;
 }
 
 .post-text {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .post-image {
   max-width: 100%;
   border-radius: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .reactions {
@@ -131,12 +149,13 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
 }
 
 .reaction {
-  margin-right: 10px;
+  margin-right: 8px;
 }
 
 .reactions button {
   font-size: 16px;
-  margin-right: 10px;
+  height: 28px;
+  margin-right: 8px;
 }
 
 .reactions button.active {

@@ -2,6 +2,8 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
+  modules: ["@nuxtjs/tailwindcss"],
+
   typescript: {
     typeCheck: true,
     strict: true,
