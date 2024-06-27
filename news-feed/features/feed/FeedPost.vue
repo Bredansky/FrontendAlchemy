@@ -1,7 +1,7 @@
 <template>
   <div class="feed-post">
     <div class="author-info">
-      <img
+      <NuxtImg
         :src="post.author.profilePhotoUrl"
         alt="Profile Picture"
         class="profile-picture"
@@ -100,7 +100,6 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
 .feed-post {
   border: 1px solid #ccc;
   border-radius: 8px;
-  margin-bottom: 20px;
   padding: 8px;
 }
 

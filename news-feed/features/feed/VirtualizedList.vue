@@ -2,9 +2,7 @@
   <div ref="root" class="root" :style="rootStyle">
     <div ref="viewport" class="viewport" :style="viewportStyle">
       <div ref="spacer" class="spacer" :style="spacerStyle">
-        <div v-for="item in visibleItems" :key="item">
-          {{ item }}
-        </div>
+        <FeedPost v-for="post in visibleItems" :key="post.id" :post="post" />
       </div>
     </div>
     <div ref="sentinel" class="sentinel"></div>
@@ -15,15 +13,39 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
-
 const sentinel = ref(null); // Define sentinel ref
 
-const items = ref(
-  new Array(50).fill(null).map((item, index) => `Item ${index + 1}`),
-);
-const rootHeight = 400;
-const rowHeight = ref(30);
+// const items = ref(
+//   new Array(50).fill(null).map((item, index) => `Item ${index + 1}`),
+// );
+
+const items = useState("items", () => []);
+const cursor = useState("cursor", () => null);
+
+const fetchData = async (size, nextCursor) => {
+  const res = await $fetch("/api/posts", {
+    query: { size, cursor: nextCursor, userId: user.value.id },
+  });
+  return res;
+};
+
+const fetchPosts = async () => {
+  const data = await fetchData(10, cursor.value || null);
+  items.value = [
+    ...items.value,
+    ...data.posts.map((post) => {
+      post.height = post.imageUrl ? 380 : 104;
+      return post;
+    }),
+  ];
+  cursor.value = data.pagination.next_cursor;
+  loading.value = false;
+};
+
+const user = useState("user", () => null);
+user.value = await $fetch("/api/users/4").then((result) => result.user);
+
+const rootHeight = 608;
 const scrollTop = ref(0);
 const nodePadding = 0;
 const loading = ref(false);
@@ -32,25 +54,78 @@ const root = ref(null); // Define root ref
 const viewport = ref(null); // Define viewport ref
 const spacer = ref(null); // Define spacer ref
 
-const viewportHeight = computed(() => itemCount.value * rowHeight.value);
-const itemCount = computed(() => items.value.length);
-const startIndex = computed(
-  () => Math.floor(scrollTop.value / rowHeight.value) - nodePadding,
-);
-const visibleNodeCount = computed(
-  () => Math.ceil(rootHeight / rowHeight.value) + 2 * nodePadding,
-);
+const viewportHeight = computed(() => {
+  if (items.value.length === 0) {
+    return 0;
+  }
+  return items.value.reduce((acc, cur) => {
+    return acc + cur.height;
+  }, 0);
+});
+
+const startIndex = computed(() => {
+  let sum = 0;
+  let index = 0;
+
+  while (sum < scrollTop.value && index < items.value.length) {
+    const itemHeight = items.value[index].height;
+    sum += itemHeight !== undefined ? itemHeight : 0; // Use 0 if height is not yet measured
+    index++;
+  }
+
+  console.log("startIndex", Math.max(0, index - 1));
+
+  return Math.max(0, index - 1);
+});
+
+const visibleNodeCount = computed(() => {
+  if (items.value.length === 0) {
+    return 0;
+  }
+  console.log("triggered");
+  let count = 1;
+  let index = startIndex.value + 1;
+  let sum =
+    items.value[startIndex.value].height - (scrollTop.value - offsetY.value);
+
+  while (index < items.value.length && sum < rootHeight) {
+    const itemHeight = items.value[index].height;
+    console.log(items.value[index]);
+    sum += itemHeight !== undefined ? itemHeight : 0;
+    count++;
+    index++;
+    console.log("sum", sum, "count", count, "index", index);
+  }
+
+  console.log("visibleNodeCount", count);
+  console.log(
+    "scrollTop.value",
+    scrollTop.value,
+    "offsetY.value",
+    offsetY.value,
+  );
+  return count;
+});
+
 const visibleItems = computed(() =>
   items.value.slice(
     startIndex.value,
     startIndex.value + visibleNodeCount.value,
   ),
 );
-const offsetY = computed(() => startIndex.value * rowHeight.value);
+
+const offsetY = computed(() => {
+  // Sum the height of all items before the start index
+  return items.value.slice(0, startIndex.value).reduce((acc, item) => {
+    return acc + (item.height || 0); // Ensure height defaults to 0 if undefined
+  }, 0);
+});
 
 const rootStyle = computed(() => ({
   height: `${rootHeight}px`,
   overflow: "auto",
+  borderStyle: "dashed",
+  borderWidth: "1px",
 }));
 
 const viewportStyle = computed(() => ({
@@ -64,15 +139,9 @@ const spacerStyle = computed(() => ({
 }));
 
 const loadMore = () => {
+  console.log("wtf");
   loading.value = true;
-  setTimeout(() => {
-    const newItems = [];
-    for (let i = 1; i <= 50; i++) {
-      newItems.push(`Item ${items.value.length + i}`);
-    }
-    items.value = [...items.value, ...newItems];
-    loading.value = false;
-  }, 1000); // Simulating async load
+  fetchPosts();
 };
 
 const handleScroll = () => {
@@ -84,7 +153,8 @@ const handleScroll = () => {
   scrollTop.value = root.value.scrollTop;
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchPosts();
   const doesBrowserSupportPassiveScroll = () => {
     let passiveSupported = false;
 
@@ -105,8 +175,6 @@ onMounted(() => {
     return passiveSupported;
   };
 
-  const largestHeight = calculateInitialRowHeight();
-  rowHeight.value = largestHeight || 30; // Default to 30 if no items are rendered initially
   root.value.addEventListener(
     "scroll",
     handleScroll,
@@ -130,17 +198,6 @@ onMounted(() => {
 onUnmounted(() => {
   root.value.removeEventListener("scroll", handleScroll);
 });
-
-const calculateInitialRowHeight = () => {
-  const children = spacer.value.children;
-  let largestHeight = 0;
-  for (let i = 0; i < children.length; i++) {
-    if (children[i].offsetHeight > largestHeight) {
-      largestHeight = children[i].offsetHeight;
-    }
-  }
-  return largestHeight;
-};
 </script>
 
 <style scoped>

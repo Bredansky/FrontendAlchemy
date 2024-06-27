@@ -1,10 +1,10 @@
 <template>
-    <div>
-        <PostComposer />
-        <!-- <FeedPost v-for="post in posts" :key="post.id" :post="post" />
+  <div>
+    <PostComposer />
+    <!-- <FeedPost v-for="post in posts" :key="post.id" :post="post" />
         <div ref="sentinel" style="height: 1px" /> -->
-        <VirtualizedList />
-    </div>
+    <VirtualizedList />
+  </div>
 </template>
 
 <script setup>
