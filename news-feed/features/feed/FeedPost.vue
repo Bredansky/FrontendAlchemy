@@ -1,5 +1,5 @@
 <template>
-  <div class="feed-post">
+  <div :style="{ height: post.height + 'px' }">
     <div class="author-info">
       <NuxtImg
         :src="post.author.profilePhotoUrl"
@@ -8,16 +8,16 @@
       />
       <div>
         <p class="author-name">
-          {{ post.author.nickname }}
+          {{ post.author.nickname + post.height }}
         </p>
         <p class="post-time">
           {{ formatDate(post.createdAt) }}
         </p>
       </div>
     </div>
-    <!-- <p class="post-text">
+    <p class="post-text">
       {{ post.content }}
-    </p> -->
+    </p>
     <img
       v-if="post.imageUrl"
       :src="post.imageUrl"
@@ -100,7 +100,6 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
 .feed-post {
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 8px;
 }
 
 .author-info {

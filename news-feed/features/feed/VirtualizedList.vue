@@ -29,12 +29,41 @@ const fetchData = async (size, nextCursor) => {
   return res;
 };
 
+const maxWidth = 370; // Your box width in pixels
+const lineHeight = 24; // Your line height in pixels
+const fontSize = "16px"; // Your font size and family
+
+function calculateTextHeight(text, maxWidth, lineHeight, fontSize) {
+  const container = document.createElement("div");
+  container.style.visibility = "hidden";
+  container.style.position = "absolute";
+  container.style.width = `${maxWidth}px`; // Set the width to maxWidth
+  container.style.fontSize = fontSize; // Set font size and family
+  container.style.lineHeight = `${lineHeight}px`; // Set line height
+  container.style.wordWrap = "break-word"; // Wrap long words
+  container.style.whiteSpace = "normal"; // Allow line breaks
+  container.textContent = text;
+
+  document.body.appendChild(container);
+  const textHeight = container.offsetHeight; // Measure the height of the container
+  document.body.removeChild(container);
+
+  return textHeight;
+}
+
 const fetchPosts = async () => {
   const data = await fetchData(10, cursor.value || null);
+
   items.value = [
     ...items.value,
     ...data.posts.map((post) => {
-      post.height = post.imageUrl ? 380 : 104;
+      post.height = post.imageUrl ? 388 : 104;
+      post.height += calculateTextHeight(
+        post.content,
+        maxWidth,
+        lineHeight,
+        fontSize,
+      );
       return post;
     }),
   ];
@@ -47,7 +76,6 @@ user.value = await $fetch("/api/users/4").then((result) => result.user);
 
 const rootHeight = 608;
 const scrollTop = ref(0);
-const nodePadding = 0;
 const loading = ref(false);
 
 const root = ref(null); // Define root ref
