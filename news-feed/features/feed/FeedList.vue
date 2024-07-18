@@ -1,5 +1,6 @@
 <template>
   <div>
+    <NuxtLink to="/profile">Hello, {{ user.nickname }}</NuxtLink>
     <PostComposer />
     <!-- <FeedPost v-for="post in posts" :key="post.id" :post="post" />
         <div ref="sentinel" style="height: 1px" /> -->
@@ -26,8 +27,8 @@
 // }
 
 // // Define state for the user
-// const user = useState('user', () => null);
-// user.value = await $fetch('/api/users/4').then(result => result.user)
+const user = useState("user", () => null);
+user.value = await $fetch("/api/users/4").then((result) => result.user);
 
 // onMounted(async () => {
 //     // try {

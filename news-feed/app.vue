@@ -1,7 +1,5 @@
 <template>
-  <FeedList />
+  <div>
+    <NuxtPage />
+  </div>
 </template>
-
-<script setup>
-import FeedList from "~/features/feed/FeedList";
-</script>

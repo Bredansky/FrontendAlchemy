@@ -1,5 +1,8 @@
 <template>
-  <div :style="{ height: post.height + 'px' }">
+  <div
+    class="py-2 border border-gray-300"
+    :style="{ height: post.height + 'px' }"
+  >
     <div class="author-info">
       <NuxtImg
         :src="post.author.profilePhotoUrl"
