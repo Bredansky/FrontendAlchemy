@@ -10,13 +10,47 @@
     </div>
     <div ref="sentinel" class="sentiel"></div>
   </div>
+  <div
+    v-if="showPrompt"
+    class="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-900 bg-opacity-50 z-50"
+  >
+    <div class="bg-white p-4 rounded shadow-lg">
+      <p class="mb-4">The feed is stale. Do you want to refresh?</p>
+      <button
+        class="bg-blue-500 text-white px-4 py-2 rounded"
+        @click="refreshFeed()"
+      >
+        Refresh
+      </button>
+      <button
+        class="ml-2 bg-gray-300 text-gray-700 px-4 py-2 rounded"
+        @click="showPrompt = false"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup>
+const STALE_FEED_DURATION = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+const showPrompt = ref(false);
+
 const sentinel = ref(null); // Define sentinel ref
 
 const posts = useState("posts", () => []);
 const cursor = useState("cursor", () => null);
+const lastFetchTime = useState("lastFetchTime", () => Date.now());
+
+const checkForStaleFeed = () => {
+  const currentTime = Date.now();
+  const timeElapsed = currentTime - lastFetchTime.value;
+
+  if (timeElapsed > STALE_FEED_DURATION) {
+    // Prompt the user to refresh
+    showPrompt.value = true;
+  }
+};
 
 const fetchData = async (size, nextCursor) => {
   const res = await $fetch("/api/posts", {
@@ -24,10 +58,6 @@ const fetchData = async (size, nextCursor) => {
   });
   return res;
 };
-
-const maxWidth = 370; // Your box width in pixels
-const lineHeight = 24; // Your line height in pixels
-const fontSize = "16px"; // Your font size and family
 
 function calculateTextHeight(text, maxWidth, lineHeight, fontSize) {
   const container = document.createElement("div");
@@ -47,23 +77,38 @@ function calculateTextHeight(text, maxWidth, lineHeight, fontSize) {
   return textHeight;
 }
 
+const refreshFeed = async () => {
+  posts.value = []; // Clear existing feed
+  cursor.value = null; // Reset cursor
+  showPrompt.value = false;
+  window.scrollTo(0, 0);
+  root.value.scrollTop = 0;
+  await fetchPosts(); // Fetch new posts
+};
+
 const fetchPosts = async () => {
+  loading.value = true;
   const data = await fetchData(10, cursor.value || null);
+  const lineHeight = 24;
+  const maxWidth = 370;
+  const fontSize = "16px";
 
   posts.value = [
     ...posts.value,
     ...data.posts.map((post) => {
-      post.height = post.imageUrl ? 388 : 104;
-      post.height += calculateTextHeight(
+      const textHeight = calculateTextHeight(
         post.content,
         maxWidth,
         lineHeight,
         fontSize,
       );
+      post.height = post.imageUrl ? 388 : 104;
+      post.height += textHeight;
       return post;
     }),
   ];
   cursor.value = data.pagination.next_cursor;
+  lastFetchTime.value = Date.now();
   loading.value = false;
 };
 
@@ -165,11 +210,6 @@ const spacerStyle = computed(() => ({
   transform: `translateY(${offsetY.value}px)`,
 }));
 
-const loadMore = () => {
-  loading.value = true;
-  fetchPosts();
-};
-
 const handleScroll = () => {
   scrollTop.value = root.value.scrollTop;
 };
@@ -209,13 +249,15 @@ onMounted(async () => {
       // console.log("helwwow", entries[0].isIntersecting);
 
       if (entries[0].isIntersecting && !loading.value) {
-        loadMore();
+        fetchPosts();
       }
     },
     { threshold: 0.5 },
   );
 
   intersectionObserver.observe(sentinel.value);
+
+  setInterval(checkForStaleFeed, 10 * 60 * 1000); // Check every 10 minutes
 });
 </script>
 
