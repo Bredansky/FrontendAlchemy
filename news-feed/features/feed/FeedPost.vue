@@ -1,43 +1,45 @@
 <template>
   <div
-    class="py-2 border border-gray-300"
+    class="py-2 border border-gray-300 rounded-lg"
     :style="{ height: post.height + 'px' }"
   >
-    <div class="author-info">
+    <div class="flex items-center mb-2">
       <NuxtImg
         :src="post.author.profilePhotoUrl"
         alt="Profile Picture"
-        class="profile-picture"
+        class="w-12 h-12 rounded-full mr-4"
       />
       <div>
-        <p class="author-name">
-          {{ post.author.nickname + post.height }}
-        </p>
-        <p class="post-time">
-          {{ formatDate(post.createdAt) }}
-        </p>
+        <p class="font-semibold mb-1">{{ post.author.nickname }}</p>
+        <p class="text-gray-500 text-sm">{{ formatDate(post.createdAt) }}</p>
       </div>
     </div>
-    <p class="post-text">
-      {{ post.content }}
-    </p>
+    <p class="mb-2" v-html="enrichedContent"></p>
     <img
       v-if="post.imageUrl"
       :src="post.imageUrl"
-      alt="Post Image"
-      class="post-image"
       width="357px"
       height="268px"
+      alt="Post Image"
+      class="max-w-full rounded-lg mb-2"
     />
-    <div class="reactions">
+    <div class="flex justify-between text-gray-700 text-sm">
       <button
-        :class="{ active: userReactions.like }"
+        :class="{
+          'bg-blue-500 text-white font-semibold': userReactions.like,
+          'bg-gray-200 text-gray-700': !userReactions.like,
+        }"
+        class="px-3 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         @click="toggleReaction('like')"
       >
         👍 {{ post.reactions.likes }}
       </button>
       <button
-        :class="{ active: userReactions.haha }"
+        :class="{
+          'bg-blue-500 text-white font-semibold': userReactions.haha,
+          'bg-gray-200 text-gray-700': !userReactions.haha,
+        }"
+        class="px-3 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         @click="toggleReaction('haha')"
       >
         😂 {{ post.reactions.hahas }}
@@ -48,6 +50,7 @@
 
 <script setup lang="ts">
 import type { AuthoredPost } from "~/server/api/posts.get";
+import { ref, computed } from "vue";
 
 const props = defineProps<{
   post: AuthoredPost;
@@ -97,73 +100,22 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
     }
   }
 };
+
+// Computed property to enrich content
+const enrichedContent = computed(() => {
+  const hashtagPattern = /#(\w+)/g;
+  const mentionPattern = /@(\w+)/g;
+
+  const newContent = props.post.content
+    .replace(
+      hashtagPattern,
+      '<span class="text-blue-500 font-semibold">#$1</span>',
+    )
+    .replace(
+      mentionPattern,
+      '<span class="text-blue-500 font-semibold">@$1</span>',
+    );
+
+  return newContent;
+});
 </script>
-
-<style scoped>
-.feed-post {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-.author-info {
-  display: flex;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.profile-picture {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 15px;
-}
-
-.author-name {
-  font-weight: bold;
-  margin-bottom: 5px;
-  line-height: 24px;
-  margin: 0;
-}
-
-.post-time {
-  color: #888;
-  font-size: 12px;
-  line-height: 18px;
-  margin: 0;
-}
-
-.post-text {
-  margin-bottom: 8px;
-}
-
-.post-image {
-  max-width: 100%;
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
-
-.reactions {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: #555;
-}
-
-.reaction {
-  margin-right: 8px;
-}
-
-.reactions button {
-  font-size: 16px;
-  height: 28px;
-  margin-right: 8px;
-}
-
-.reactions button.active {
-  background-color: #007bff;
-}
-
-.reactions .active {
-  font-weight: bold;
-}
-</style>
