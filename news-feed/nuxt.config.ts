@@ -15,4 +15,8 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
+
+  image: {
+    domains: ["picsum.photos"],
+  },
 });

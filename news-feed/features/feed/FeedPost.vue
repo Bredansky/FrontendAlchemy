@@ -15,14 +15,36 @@
       </div>
     </div>
     <p class="mb-2" v-html="enrichedContent"></p>
+    <div
+      v-if="
+        isPoorConnection() && !imageLoaded && lowResImageUrl && post.imageUrl
+      "
+      class="relative"
+    >
+      <img
+        :src="lowResImageUrl"
+        width="357px"
+        height="268px"
+        alt="Low Resolution Post Image"
+        class="max-w-full rounded-lg mb-2 cursor-pointer"
+      />
+      <div
+        class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
+        @click="loadHighResImage"
+      >
+        <span class="text-white text-lg font-semibold">Click to Load</span>
+      </div>
+    </div>
     <img
-      v-if="post.imageUrl"
-      :src="post.imageUrl"
+      v-else-if="(isFastConnection() && post.imageUrl) || imageLoaded"
+      ref="imageRef"
+      :src="imageSrc"
       width="357px"
       height="268px"
       alt="Post Image"
       class="max-w-full rounded-lg mb-2"
     />
+
     <div class="flex justify-between text-gray-700 text-sm">
       <button
         :class="{
@@ -54,6 +76,7 @@ import { ref, computed } from "vue";
 
 const props = defineProps<{
   post: AuthoredPost;
+  root: Element;
 }>();
 
 const userReactions = ref({
@@ -102,6 +125,7 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
 };
 
 // Computed property to enrich content
+// TODO: Why is it computed?
 const enrichedContent = computed(() => {
   const hashtagPattern = /#(\w+)/g;
   const mentionPattern = /@(\w+)/g;
@@ -117,5 +141,75 @@ const enrichedContent = computed(() => {
     );
 
   return newContent;
+});
+
+const imageSrc = ref("");
+const imageRef = ref(null);
+const imageLoaded = ref(false);
+
+const isFastConnection = () => {
+  if (navigator.connection) {
+    const connectionType = navigator.connection.effectiveType;
+    return connectionType === "4g" || navigator.connection.saveData === false;
+  }
+  return true; // Default to true if Network Information API is not supported
+};
+
+const isPoorConnection = (): boolean => {
+  return !isFastConnection();
+};
+
+const generateLowResImageUrl = (url: string) => {
+  // Split URL into parts
+  const urlParts = url.split("/");
+
+  // Replace dimensions with low-res dimensions
+  const lowResWidth = "80";
+  const lowResHeight = "60";
+
+  // Update URL parts
+  urlParts[urlParts.length - 2] = lowResWidth;
+  urlParts[urlParts.length - 1] = lowResHeight;
+
+  // Join URL parts back together
+  return urlParts.join("/");
+};
+
+const lowResImageUrl = generateLowResImageUrl(props.post.imageUrl || "");
+console.log(lowResImageUrl);
+
+const handleVisibilityChange = (
+  entries: IntersectionObserverEntry[],
+  observer: IntersectionObserver,
+) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      if (isFastConnection()) {
+        console.log("Intersecting");
+        imageSrc.value = props.post.imageUrl || ""; // Fallback to empty string if null
+      }
+      observer.unobserve(entry.target);
+    }
+  });
+};
+
+const loadHighResImage = () => {
+  imageSrc.value = props.post.imageUrl || "";
+  imageLoaded.value = true;
+};
+
+onMounted(() => {
+  const connectionIsFast = isFastConnection();
+
+  if (imageRef.value) {
+    if (connectionIsFast) {
+      // For fast connections, use IntersectionObserver with a rootMargin
+      const observer = new IntersectionObserver(handleVisibilityChange, {
+        root: props.root,
+        rootMargin: "500px", // Pre-fetch the image
+      });
+      observer.observe(imageRef.value);
+    }
+  }
 });
 </script>

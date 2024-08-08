@@ -2,7 +2,12 @@
   <div ref="root" class="root" :style="rootStyle">
     <div ref="viewport" class="viewport" :style="viewportStyle">
       <div ref="spacer" class="spacer" :style="spacerStyle">
-        <FeedPost v-for="post in visibleItems" :key="post.id" :post="post" />
+        <FeedPost
+          v-for="post in visibleItems"
+          :key="post.id"
+          :post="post"
+          :root="root"
+        />
       </div>
     </div>
     <div v-if="loading">
