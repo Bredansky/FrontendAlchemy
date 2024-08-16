@@ -13,7 +13,11 @@
     "lint": "pnpm run lint:js && pnpm run lint:prettier",
     "lintfix": "prettier --write --list-different . && pnpm run lint:js --fix",
     "typecheck": "pnpm nuxi typecheck",
-    "seed": "tsx db/seed.ts"
+    "seed": "tsx db/seed.ts",
+    "dk:migrate": "drizzle-kit migrate",
+    "dk:generate": "drizzle-kit generate",
+    "dk:push": "drizzle-kit push"
+
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",

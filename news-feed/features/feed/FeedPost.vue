@@ -11,7 +11,9 @@
       />
       <div>
         <p class="font-semibold mb-1">{{ post.author.nickname }}</p>
-        <p class="text-gray-500 text-sm">{{ formatDate(post.createdAt) }}</p>
+        <p class="text-gray-500 text-sm">
+          {{ formatRelativeTime(post.createdAt) }}
+        </p>
       </div>
     </div>
     <p class="mb-2" v-html="enrichedContent"></p>
@@ -86,9 +88,47 @@ const userReactions = ref({
 
 const user = useState("user", () => ({ id: 4 }));
 
-const formatDate = (timestamp: string) => {
+const formatRelativeTime = (timestamp: Date) => {
+  const now = new Date();
+  const postDate = new Date(timestamp);
+  const timeDifference = Number(now) - Number(postDate);
+
+  const seconds = Math.floor(timeDifference / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  // If the post is older than 1 day, return the formatted date
+  if (days >= 1) {
+    return formatDate(timestamp);
+  } else if (hours > 0) {
+    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  } else if (minutes > 0) {
+    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  } else if (seconds >= 10) {
+    return `${seconds} second${seconds === 1 ? "" : "s"} ago`;
+  } else {
+    return "Just now";
+  }
+};
+
+const formatDate = (timestamp: Date) => {
+  const userLocale = navigator.language || navigator.languages[0];
   const date = new Date(timestamp);
-  return date.toLocaleString(); // You can specify locale and options here if needed
+
+  const formattedTime = new Intl.DateTimeFormat(userLocale, {
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23", // or 'h12'
+  }).format(date);
+
+  const formattedDate = new Intl.DateTimeFormat(userLocale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+
+  return `${formattedTime} · ${formattedDate}`;
 };
 
 const toggleReaction = async (reactionType: "like" | "haha") => {
@@ -160,6 +200,7 @@ const isPoorConnection = (): boolean => {
 };
 
 const generateLowResImageUrl = (url: string) => {
+  if (!url) return "";
   // Split URL into parts
   const urlParts = url.split("/");
 
@@ -176,7 +217,6 @@ const generateLowResImageUrl = (url: string) => {
 };
 
 const lowResImageUrl = generateLowResImageUrl(props.post.imageUrl || "");
-console.log(lowResImageUrl);
 
 const handleVisibilityChange = (
   entries: IntersectionObserverEntry[],
@@ -185,7 +225,6 @@ const handleVisibilityChange = (
   entries.forEach((entry) => {
     if (entry.isIntersecting) {
       if (isFastConnection()) {
-        console.log("Intersecting");
         imageSrc.value = props.post.imageUrl || ""; // Fallback to empty string if null
       }
       observer.unobserve(entry.target);
@@ -196,6 +235,12 @@ const handleVisibilityChange = (
 const loadHighResImage = () => {
   imageSrc.value = props.post.imageUrl || "";
   imageLoaded.value = true;
+};
+
+const relativeTimestamp = ref("");
+
+const updateTimestamp = () => {
+  relativeTimestamp.value = formatRelativeTime(props.post.createdAt);
 };
 
 onMounted(() => {
@@ -210,6 +255,23 @@ onMounted(() => {
       });
       observer.observe(imageRef.value);
     }
+  }
+
+  updateTimestamp();
+
+  const postDate = new Date(props.post.createdAt);
+  const now = new Date();
+  const timeDifference = Number(now) - Number(postDate);
+
+  if (timeDifference < 24 * 60 * 60 * 1000) {
+    // Update every minute if the post is less than 24 hours old
+    const interval = setInterval(() => {
+      updateTimestamp();
+    }, 60000);
+
+    onUnmounted(() => {
+      clearInterval(interval);
+    });
   }
 });
 </script>

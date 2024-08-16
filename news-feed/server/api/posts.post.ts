@@ -1,6 +1,5 @@
 import { posts, type InsertPost } from "@/db/schema";
 import { db } from "@/db";
-import { faker } from "@faker-js/faker";
 
 export default defineEventHandler(async (event) => {
   try {

@@ -10,9 +10,9 @@ export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
   nickname: text("nickname").notNull(),
   profilePhotoUrl: text("profile_photo_url").notNull(),
-  createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 export type SelectUser = typeof users.$inferSelect;
@@ -25,9 +25,9 @@ export const posts = sqliteTable("posts", {
     .references((): AnySQLiteColumn => users.id),
   content: text("content").notNull(),
   imageUrl: text("image_url"),
-  createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 export type SelectPost = typeof posts.$inferSelect;
@@ -42,9 +42,9 @@ export const reactions = sqliteTable("reactions", {
     .notNull()
     .references((): AnySQLiteColumn => users.id),
   type: text("type").notNull(),
-  createdAt: text("created_at")
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 export type SelectReaction = typeof reactions.$inferSelect;
