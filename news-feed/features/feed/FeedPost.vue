@@ -76,8 +76,12 @@
 import type { AuthoredPost } from "~/server/api/posts.get";
 import { ref, computed } from "vue";
 
+export interface AuthoredPostWithHeight extends AuthoredPost {
+  height: number;
+}
+
 const props = defineProps<{
-  post: AuthoredPost;
+  post: AuthoredPostWithHeight;
   root: Element;
 }>();
 
@@ -188,7 +192,7 @@ const imageRef = ref(null);
 const imageLoaded = ref(false);
 
 const isFastConnection = () => {
-  if (navigator.connection) {
+  if (import.meta.client && navigator.connection) {
     const connectionType = navigator.connection.effectiveType;
     return connectionType === "4g" || navigator.connection.saveData === false;
   }

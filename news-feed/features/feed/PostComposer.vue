@@ -24,6 +24,7 @@
       </label>
       <button
         class="px-4 py-2 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        :disabled="isPostButtonDisabled"
         @click="postNewPost"
       >
         Post
@@ -32,37 +33,61 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from "vue";
 import { faker } from "@faker-js/faker";
+import type { SelectUser } from "~/db/schema";
+import type { AuthoredPostWithHeight } from "./FeedPost.vue";
 
 // State and variables
-const posts = useState("posts", () => []);
-const user = useState("user", () => null);
+const posts = useState<AuthoredPostWithHeight[]>("posts", () => []);
+const user = useState<SelectUser>("user", () => ({
+  createdAt: new Date(),
+  nickname: "Unknown",
+  profilePhotoUrl: "",
+  id: 0,
+}));
 const content = ref("");
 const addFancyPicture = ref(false);
+const isPostButtonDisabled = computed(() => {
+  return content.value.trim() === "" && !addFancyPicture.value;
+});
 
 // Function to post a new post
 const postNewPost = async () => {
   const randomImage = faker.image.urlPicsumPhotos();
 
   const newPost = {
-    id: Math.random().toString(36).substr(2, 9),
+    id: parseInt(Math.random().toString().slice(2, 9), 10),
     content: content.value,
     author: { ...user.value },
-    created_time: Date.now() / 1000,
-    image: addFancyPicture.value ? randomImage : null,
+    imageUrl: addFancyPicture.value ? randomImage : null,
+    reactions: {
+      likes: 0,
+      hahas: 0,
+    },
+    currentUserReaction: {
+      liked: false,
+      hahaed: false,
+    },
+    createdAt: new Date(),
+    authorId: user.value.id,
+    height: 0,
   };
+
+  newPost.height = calculatePostHeight(newPost);
 
   // Optimistic update
   posts.value = [newPost, ...posts.value];
 
   // Save to server
   try {
+    //TODO: key chained stores of users posts and reactions!!!!! !! ! ! ! !  !
+    //TODO: update specific post in state after fetching
     await $fetch("api/posts", {
       method: "POST",
       body: {
-        image_url: addFancyPicture.value ? randomImage : null,
+        imageUrl: addFancyPicture.value ? randomImage : null,
         content: content.value,
         authorId: user.value.id,
       },

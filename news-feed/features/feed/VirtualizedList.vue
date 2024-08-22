@@ -43,7 +43,21 @@ const showPrompt = ref(false);
 
 const sentinel = ref(null); // Define sentinel ref
 
+const user = useState("user", () => null);
+user.value = await $fetch("/api/users/4").then((result) => result.user);
+
+const { data } = await useFetch("/api/posts", {
+  query: { size: 10, cursor: null, userId: 4 },
+});
+
+const postsWithHeight = data.value.posts.map((post) => {
+  post.height = calculatePostHeight(post);
+  return post;
+});
+
 const posts = useState("posts", () => []);
+posts.value = postsWithHeight;
+
 const cursor = useState("cursor", () => null);
 const lastFetchTime = useState("lastFetchTime", () => Date.now());
 
@@ -64,24 +78,6 @@ const fetchData = async (size, nextCursor) => {
   return res;
 };
 
-function calculateTextHeight(text, maxWidth, lineHeight, fontSize) {
-  const container = document.createElement("div");
-  container.style.visibility = "hidden";
-  container.style.position = "absolute";
-  container.style.width = `${maxWidth}px`; // Set the width to maxWidth
-  container.style.fontSize = fontSize; // Set font size and family
-  container.style.lineHeight = `${lineHeight}px`; // Set line height
-  container.style.wordWrap = "break-word"; // Wrap long words
-  container.style.whiteSpace = "normal"; // Allow line breaks
-  container.textContent = text;
-
-  document.body.appendChild(container);
-  const textHeight = container.offsetHeight; // Measure the height of the container
-  document.body.removeChild(container);
-
-  return textHeight;
-}
-
 const refreshFeed = async () => {
   posts.value = []; // Clear existing feed
   cursor.value = null; // Reset cursor
@@ -94,21 +90,11 @@ const refreshFeed = async () => {
 const fetchPosts = async () => {
   loading.value = true;
   const data = await fetchData(10, cursor.value || null);
-  const lineHeight = 24;
-  const maxWidth = 370;
-  const fontSize = "16px";
 
   posts.value = [
     ...posts.value,
     ...data.posts.map((post) => {
-      const textHeight = calculateTextHeight(
-        post.content,
-        maxWidth,
-        lineHeight,
-        fontSize,
-      );
-      post.height = post.imageUrl ? 388 : 104;
-      post.height += textHeight;
+      post.height = calculatePostHeight(post);
       return post;
     }),
   ];
@@ -116,9 +102,6 @@ const fetchPosts = async () => {
   lastFetchTime.value = Date.now();
   loading.value = false;
 };
-
-const user = useState("user", () => null);
-user.value = await $fetch("/api/users/4").then((result) => result.user);
 
 const rootHeight = 608;
 const scrollTop = useState("scrollTop", () => 0);
@@ -220,9 +203,9 @@ const handleScroll = () => {
 };
 
 onMounted(async () => {
-  if (posts.value.length === 0) {
-    await fetchPosts();
-  }
+  // if (posts.value.length === 0) {
+  //   await fetchPosts();
+  // }
   root.value.scrollTop = scrollTop.value;
   const doesBrowserSupportPassiveScroll = () => {
     let passiveSupported = false;
@@ -251,8 +234,6 @@ onMounted(async () => {
 
   const intersectionObserver = new IntersectionObserver(
     (entries) => {
-      // console.log("helwwow", entries[0].isIntersecting);
-
       if (entries[0].isIntersecting && !loading.value) {
         fetchPosts();
       }

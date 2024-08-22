@@ -18,8 +18,6 @@ export interface AuthoredPost extends SelectPost {
     liked: boolean;
     hahaed: boolean;
   };
-  //TODO: Extend on FE side
-  height: number;
 }
 
 export default defineEventHandler(async (event) => {
