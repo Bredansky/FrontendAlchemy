@@ -1,6 +1,6 @@
 <template>
   <div
-    class="py-2 border border-gray-300 rounded-lg"
+    class="py-2 border-b border-gray-300"
     :style="{ height: post.height + 'px' }"
   >
     <div class="flex items-center mb-2">
@@ -117,7 +117,10 @@ const formatRelativeTime = (timestamp: Date) => {
 };
 
 const formatDate = (timestamp: Date) => {
-  const userLocale = navigator.language || navigator.languages[0];
+  const userLocale = process.client
+    ? navigator.language || navigator.languages[0]
+    : "en-US";
+
   const date = new Date(timestamp);
 
   const formattedTime = new Intl.DateTimeFormat(userLocale, {

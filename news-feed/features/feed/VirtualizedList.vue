@@ -1,7 +1,15 @@
 <template>
-  <div ref="root" class="root" :style="rootStyle">
-    <div ref="viewport" class="viewport" :style="viewportStyle">
-      <div ref="spacer" class="spacer" :style="spacerStyle">
+  <div
+    ref="root"
+    :style="rootStyle"
+    class="overflow-auto border-t border-gray-300"
+  >
+    <div
+      ref="viewport"
+      :style="viewportStyle"
+      class="max-w-screen-xl min-w-80 mx-auto border border-gray-300 border-t-0"
+    >
+      <div ref="spacer" :style="spacerStyle">
         <FeedPost
           v-for="post in visibleItems"
           :key="post.id"
@@ -13,7 +21,7 @@
     <div v-if="loading">
       <SkeletonLoader v-for="i in 4" :key="'loader' + i" />
     </div>
-    <div ref="sentinel" class="sentiel"></div>
+    <div ref="sentinel" class="h-1"></div>
   </div>
   <div
     v-if="showPrompt"
@@ -46,17 +54,7 @@ const sentinel = ref(null); // Define sentinel ref
 const user = useState("user", () => null);
 user.value = await $fetch("/api/users/4").then((result) => result.user);
 
-const { data } = await useFetch("/api/posts", {
-  query: { size: 10, cursor: null, userId: 4 },
-});
-
-const postsWithHeight = data.value.posts.map((post) => {
-  post.height = calculatePostHeight(post);
-  return post;
-});
-
 const posts = useState("posts", () => []);
-posts.value = postsWithHeight;
 
 const cursor = useState("cursor", () => null);
 const lastFetchTime = useState("lastFetchTime", () => Date.now());
@@ -94,7 +92,7 @@ const fetchPosts = async () => {
   posts.value = [
     ...posts.value,
     ...data.posts.map((post) => {
-      post.height = calculatePostHeight(post);
+      post.height = calculatePostHeight(post, viewport.value.offsetWidth);
       return post;
     }),
   ];
@@ -103,7 +101,8 @@ const fetchPosts = async () => {
   loading.value = false;
 };
 
-const rootHeight = 608;
+const rootHeight = ref(0);
+
 const scrollTop = useState("scrollTop", () => 0);
 
 // console.log("!!!", posts.value.length, scrollTop.value);
@@ -148,7 +147,7 @@ const visibleNodeCount = computed(() => {
   let sum =
     posts.value[startIndex.value].height - (scrollTop.value - offsetY.value);
 
-  while (index < posts.value.length && sum < rootHeight) {
+  while (index < posts.value.length && sum < rootHeight.value) {
     const itemHeight = posts.value[index].height;
     // console.log(posts.value[index]);
     sum += itemHeight !== undefined ? itemHeight : 0;
@@ -181,17 +180,14 @@ const offsetY = computed(() => {
   }, 0);
 });
 
-const rootStyle = computed(() => ({
-  height: `${rootHeight}px`,
-  overflow: "auto",
-  borderStyle: "dashed",
-  borderWidth: "1px",
-}));
+const rootStyle = computed(() => {
+  return {
+    height: `${rootHeight.value}px`,
+  };
+});
 
 const viewportStyle = computed(() => ({
-  overflow: "hidden",
   height: `${viewportHeight.value}px`,
-  position: "relative",
 }));
 
 const spacerStyle = computed(() => ({
@@ -202,10 +198,33 @@ const handleScroll = () => {
   scrollTop.value = root.value.scrollTop;
 };
 
+const updateRootHeight = () => {
+  const vh = Math.max(
+    document.documentElement.clientHeight || 0,
+    window.innerHeight || 0,
+  );
+  rootHeight.value = vh - 40;
+};
+
+const updatePostsHeight = () => {
+  posts.value.map((post) => {
+    post.height = calculatePostHeight(post, viewport.value.offsetWidth);
+    return post;
+  });
+};
+
 onMounted(async () => {
-  // if (posts.value.length === 0) {
-  //   await fetchPosts();
-  // }
+  if (posts.value.length === 0) {
+    fetchPosts();
+  }
+
+  updateRootHeight();
+  updatePostsHeight();
+  window.addEventListener("resize", () => {
+    updateRootHeight();
+    updatePostsHeight();
+  });
+
   root.value.scrollTop = scrollTop.value;
   const doesBrowserSupportPassiveScroll = () => {
     let passiveSupported = false;
@@ -246,20 +265,3 @@ onMounted(async () => {
   setInterval(checkForStaleFeed, 10 * 60 * 1000); // Check every 10 minutes
 });
 </script>
-
-<style scoped>
-.viewport {
-  background: #fefefe;
-  overflow-y: auto;
-}
-
-.loading {
-  background: yellow;
-  text-align: center;
-  padding: 0.5rem;
-}
-
-.sentiel {
-  height: 1px;
-}
-</style>

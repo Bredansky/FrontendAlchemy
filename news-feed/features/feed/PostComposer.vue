@@ -75,7 +75,8 @@ const postNewPost = async () => {
     height: 0,
   };
 
-  newPost.height = calculatePostHeight(newPost);
+  //TODO: Set propper width
+  newPost.height = calculatePostHeight(newPost, 1);
 
   // Optimistic update
   posts.value = [newPost, ...posts.value];
