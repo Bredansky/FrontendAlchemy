@@ -107,12 +107,17 @@ export default defineEventHandler(async (event) => {
 
     let nextCursor = null;
 
-    if (results.length > Number(size)) {
+    if (!cursor || results.length > Number(size)) {
       // If we fetched more than requested, there are more results available
       const lastResult = aggregatedResults[aggregatedResults.length - 1];
+      const dateObject = lastResult
+        ? new Date(lastResult.createdAt)
+        : new Date();
+      const unixTimestamp = Math.floor(dateObject.getTime() / 1000);
+
       nextCursor =
         lastResult && lastResult.createdAt && lastResult.id
-          ? `${lastResult.createdAt}_${lastResult.id}` // Constructing next cursor
+          ? `${unixTimestamp}_${lastResult.id}` // Constructing next cursor
           : null;
     }
 

@@ -43,15 +43,19 @@
         <span class="text-white text-lg font-semibold">Click to Load</span>
       </div>
     </div>
-    <img
+    <div
       v-else-if="(isFastConnection() && post.imageUrl) || imageLoaded"
       ref="imageRef"
-      :src="imageSrc"
-      width="357px"
-      height="268px"
-      alt="Post Image"
-      class="max-w-full rounded-lg mb-2"
-    />
+    >
+      <NuxtImg
+        :src="imageSrc"
+        width="357px"
+        height="268px"
+        alt="Post Image"
+        class="max-w-full rounded-lg mb-2"
+        format="webp"
+      />
+    </div>
 
     <div class="flex justify-between text-gray-700 text-sm">
       <button
