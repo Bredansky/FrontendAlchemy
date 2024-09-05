@@ -12,7 +12,17 @@ function calculateTextHeight(text: string, width: number) {
   container.style.lineHeight = `${lineHeight}px`;
   container.style.wordWrap = "break-word";
   container.style.whiteSpace = "normal";
-  container.textContent = text;
+  const displayText = document.createElement("p");
+  displayText.textContent = text;
+  container.appendChild(displayText);
+
+  //TODO: No magick NUMBER
+  if (text.length > 300) {
+    displayText.textContent = text.substring(0, 300).trim() + "...";
+    const seeMoreText = document.createElement("p");
+    seeMoreText.textContent = "See more";
+    container.appendChild(seeMoreText);
+  }
 
   document.body.appendChild(container);
   const textHeight = container.offsetHeight;

@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="py-2 border-b border-gray-300"
-    :style="{ height: post.height + 'px' }"
-  >
+  <div class="py-2 border-b border-gray-300" :style="{ height: postHeight }">
     <div class="flex items-center mb-2">
       <NuxtImg
         :src="post.author.profilePhotoUrl"
@@ -16,7 +13,16 @@
         </p>
       </div>
     </div>
-    <p class="mb-2" v-html="enrichedContent"></p>
+    <p v-html="displayContent"></p>
+
+    <p
+      v-if="shouldTruncate"
+      class="text-blue-500 underline"
+      @click="toggleExpand"
+    >
+      {{ isExpanded ? "See less" : "See more" }}
+    </p>
+
     <div
       v-if="
         isPoorConnection() && !imageLoaded && lowResImageUrl && post.imageUrl
@@ -136,6 +142,39 @@ const formatDate = (timestamp: Date) => {
   }).format(date);
 
   return `${formattedTime} · ${formattedDate}`;
+};
+
+// Truncation logic
+
+const maxChars = 300; // Max number of characters to display before truncation
+const isExpanded = ref(false);
+const postHeight = ref(props.post.height + "px");
+// const postHeight = computed(() => {
+//   console.log(isExpanded.value);
+//   return isExpanded.value ? "unset" : props.post.height + "px";
+// });
+//TODO: Computed no needed actually
+const shouldTruncate = computed(() => props.post.content.length > maxChars);
+
+// Toggle expansion of the content
+const toggleExpand = () => {
+  postHeight.value = "unset";
+  isExpanded.value = !isExpanded.value;
+  emitResize();
+};
+
+// Display content (either truncated or full)
+const displayContent = computed(() => {
+  if (isExpanded.value || !shouldTruncate.value) {
+    return props.post.content;
+  }
+  return props.post.content.substring(0, maxChars).trim() + "...";
+});
+
+// Emit resize event
+const emit = defineEmits(["resize"]);
+const emitResize = () => {
+  emit("resize", props.post.id);
 };
 
 const toggleReaction = async (reactionType: "like" | "haha") => {

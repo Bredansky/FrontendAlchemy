@@ -15,6 +15,7 @@
           :key="post.id"
           :post="post"
           :root="root"
+          @resize="handleResize"
         />
       </div>
     </div>
@@ -58,6 +59,15 @@ const posts = useState("posts", () => []);
 
 const cursor = useState("cursor", () => null);
 const lastFetchTime = useState("lastFetchTime", () => Date.now());
+
+const handleResize = (postId) => {
+  posts.value = posts.value.map((post) => {
+    if (post.id === postId) {
+      post.height = calculatePostHeight(post, viewport.value.offsetWidth);
+    }
+    return post;
+  });
+};
 
 const checkForStaleFeed = () => {
   const currentTime = Date.now();
