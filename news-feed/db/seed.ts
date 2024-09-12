@@ -17,7 +17,10 @@ function createRandomPosts(): InsertPost {
   return {
     authorId: faker.number.int({ min: 1, max: USERS.length }), // Assuming user IDs start from 1
     content: faker.lorem.paragraph(),
-    imageUrl: Math.random() < 0.3 ? null : faker.image.urlPicsumPhotos(),
+    imageUrl:
+      Math.random() < 0.3
+        ? null
+        : faker.image.urlPicsumPhotos({ width: 1280, height: 720 }),
   };
 }
 

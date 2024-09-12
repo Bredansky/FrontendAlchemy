@@ -46,14 +46,16 @@
     <div
       v-else-if="(isFastConnection() && post.imageUrl) || imageLoaded"
       ref="imageRef"
+      class="rounded-lg overflow-hidden"
     >
       <NuxtImg
+        v-if="imageSrc"
         :src="imageSrc"
-        width="357px"
-        height="268px"
         alt="Post Image"
-        class="max-w-full rounded-lg mb-2"
         format="webp"
+        densities="1x"
+        class="min-w-full"
+        sizes="100wh xs:320px sm:640px md:768px lg:1024px xl:1280px"
       />
     </div>
 
