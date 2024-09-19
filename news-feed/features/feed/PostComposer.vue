@@ -55,7 +55,9 @@ const isPostButtonDisabled = computed(() => {
 
 // Function to post a new post
 const postNewPost = async () => {
-  const randomImage = faker.image.urlPicsumPhotos();
+  //TODO: To the constant image config or something
+  const randomImage =
+    faker.image.urlPicsumPhotos({ width: 320, height: 180 }) + ".webp";
 
   const newPost = {
     id: parseInt(Math.random().toString().slice(2, 9), 10),

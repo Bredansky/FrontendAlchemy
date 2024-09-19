@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
-  modules: ["@nuxtjs/tailwindcss", "@nuxt/image"],
+  modules: ["@nuxtjs/tailwindcss"],
 
   typescript: {
     typeCheck: true,
@@ -15,8 +15,4 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
-
-  image: {
-    domains: ["picsum.photos"],
-  },
 });

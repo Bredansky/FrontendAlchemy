@@ -1,11 +1,7 @@
 <template>
   <div>
     <NuxtLink to="/profile" class="flex items-center p-1 gap-1">
-      <NuxtImg
-        :src="user.profilePhotoUrl"
-        class="rounded-full"
-        width="32"
-      ></NuxtImg>
+      <img :src="user.profilePhotoUrl" class="rounded-full" width="32" />
       <p>{{ user.nickname }}</p>
     </NuxtLink>
 
@@ -21,5 +17,6 @@
 
 <script setup>
 const user = useState("user", () => null);
+//TODO: User profile pic also to webp
 user.value = await $fetch("/api/users/4").then((result) => result.user);
 </script>

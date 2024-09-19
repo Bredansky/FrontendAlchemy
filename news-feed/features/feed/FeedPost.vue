@@ -1,7 +1,10 @@
 <template>
-  <div class="py-2 border-b border-gray-300" :style="{ height: postHeight }">
-    <div class="flex items-center mb-2">
-      <NuxtImg
+  <div
+    class="border-b border-gray-300 space-y-1"
+    :style="{ height: postHeight }"
+  >
+    <div class="flex items-center">
+      <img
         :src="post.author.profilePhotoUrl"
         alt="Profile Picture"
         class="w-12 h-12 rounded-full mr-4"
@@ -27,14 +30,12 @@
       v-if="
         isPoorConnection() && !imageLoaded && lowResImageUrl && post.imageUrl
       "
-      class="relative"
+      class="relative aspect-video w-full"
     >
       <img
         :src="lowResImageUrl"
-        width="357px"
-        height="268px"
         alt="Low Resolution Post Image"
-        class="max-w-full rounded-lg mb-2 cursor-pointer"
+        class="w-full rounded-lg mb-2 cursor-pointer"
       />
       <div
         class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
@@ -48,14 +49,18 @@
       ref="imageRef"
       class="rounded-lg overflow-hidden"
     >
-      <NuxtImg
+      <img
         v-if="imageSrc"
         :src="imageSrc"
         alt="Post Image"
-        format="webp"
-        densities="1x"
         class="min-w-full"
-        sizes="100wh xs:320px sm:640px md:768px lg:1024px xl:1280px"
+        :srcset="`
+          ${generateImageUrl(imageSrc, 320, 180)} 320w,
+          ${generateImageUrl(imageSrc, 640, 360)} 640w,
+          ${generateImageUrl(imageSrc, 768, 432)} 768w,
+          ${generateImageUrl(imageSrc, 1024, 576)} 1024w,
+          ${generateImageUrl(imageSrc, 1280, 720)} 1280w,
+        `"
       />
     </div>
 
@@ -240,32 +245,43 @@ const imageRef = ref(null);
 const imageLoaded = ref(false);
 
 const isFastConnection = () => {
-  if (import.meta.client && navigator.connection) {
-    const connectionType = navigator.connection.effectiveType;
-    return connectionType === "4g" || navigator.connection.saveData === false;
-  }
-  return true; // Default to true if Network Information API is not supported
+  return false;
+  // if (import.meta.client && navigator.connection) {
+  //   const connectionType = navigator.connection.effectiveType;
+  //   return connectionType === "4g" || navigator.connection.saveData === false;
+  // }
+  // return true;
 };
 
+//TODO: Get rid off
 const isPoorConnection = (): boolean => {
   return !isFastConnection();
 };
 
 const generateLowResImageUrl = (url: string) => {
   if (!url) return "";
-  // Split URL into parts
+
   const urlParts = url.split("/");
 
-  // Replace dimensions with low-res dimensions
   const lowResWidth = "80";
-  const lowResHeight = "60";
+  const lowResHeight = "45";
 
-  // Update URL parts
   urlParts[urlParts.length - 2] = lowResWidth;
   urlParts[urlParts.length - 1] = lowResHeight;
 
-  // Join URL parts back together
-  return urlParts.join("/");
+  return urlParts.join("/") + "?blur=3";
+};
+
+//TODO: Call this function once for the whole srcset lmao
+const generateImageUrl = (url: string, width: number, height: number) => {
+  if (!url) return "";
+
+  const urlParts = url.split("/");
+
+  urlParts[urlParts.length - 2] = width.toString();
+  urlParts[urlParts.length - 1] = height.toString();
+
+  return urlParts.join("/") + ".webp";
 };
 
 const lowResImageUrl = generateLowResImageUrl(props.post.imageUrl || "");

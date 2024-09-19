@@ -1,5 +1,11 @@
 import type { AuthoredPostWithHeight } from "~/features/feed/FeedPost.vue";
 
+//TODO: Reuse those in actual styles
+const reactionsHeight = 28;
+const headerHeight = 48;
+const borderWidth = 1;
+const gapHeight = 4;
+
 function calculateTextHeight(text: string, width: number) {
   const lineHeight = 24;
   const fontSize = 16;
@@ -20,6 +26,7 @@ function calculateTextHeight(text: string, width: number) {
   if (text.length > 300) {
     displayText.textContent = text.substring(0, 300).trim() + "...";
     const seeMoreText = document.createElement("p");
+    seeMoreText.style.marginTop = `${gapHeight}px`;
     seeMoreText.textContent = "See more";
     container.appendChild(seeMoreText);
   }
@@ -35,8 +42,17 @@ export const calculatePostHeight = (
   post: AuthoredPostWithHeight,
   width: number,
 ) => {
-  const textHeight = calculateTextHeight(post.content, width);
-  let height = post.imageUrl ? 388 : 104;
-  height += textHeight;
+  const textHeight = calculateTextHeight(post.content, width) + gapHeight;
+  const imageHeight = post.imageUrl
+    ? (width - borderWidth * 2) * (9 / 16) + gapHeight
+    : 0;
+
+  const height =
+    headerHeight +
+    textHeight +
+    imageHeight +
+    gapHeight +
+    reactionsHeight +
+    borderWidth;
   return height;
 };

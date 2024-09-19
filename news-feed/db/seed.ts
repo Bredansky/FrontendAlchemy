@@ -20,7 +20,7 @@ function createRandomPosts(): InsertPost {
     imageUrl:
       Math.random() < 0.3
         ? null
-        : faker.image.urlPicsumPhotos({ width: 1280, height: 720 }),
+        : faker.image.urlPicsumPhotos({ width: 320, height: 180 }) + ".webp",
   };
 }
 
