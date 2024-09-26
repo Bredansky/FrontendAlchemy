@@ -99,7 +99,7 @@ export interface AuthoredPostWithHeight extends AuthoredPost {
 
 const props = defineProps<{
   post: AuthoredPostWithHeight;
-  root: Element;
+  root: Element | null;
 }>();
 
 const userReactions = ref({
@@ -203,6 +203,8 @@ const toggleReaction = async (reactionType: "like" | "haha") => {
       userReactions.value.haha = !isActive;
     }
 
+    console.log("post id", props.post);
+
     await $fetch(`/api/posts/${props.post.id}/react`, {
       method: "PUT",
       body: JSON.stringify({ action, reactionType, userId }),
@@ -245,12 +247,11 @@ const imageRef = ref(null);
 const imageLoaded = ref(false);
 
 const isFastConnection = () => {
-  return false;
-  // if (import.meta.client && navigator.connection) {
-  //   const connectionType = navigator.connection.effectiveType;
-  //   return connectionType === "4g" || navigator.connection.saveData === false;
-  // }
-  // return true;
+  if (import.meta.client && navigator.connection) {
+    const connectionType = navigator.connection.effectiveType;
+    return connectionType === "4g" || navigator.connection.saveData === false;
+  }
+  return true;
 };
 
 //TODO: Get rid off

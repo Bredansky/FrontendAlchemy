@@ -105,7 +105,7 @@ export default defineEventHandler(async (event) => {
       })
       .filter((post) => post !== null);
 
-    let nextCursor = null;
+    let nextCursor = "";
 
     if (!cursor || results.length > Number(size)) {
       // If we fetched more than requested, there are more results available
@@ -118,7 +118,7 @@ export default defineEventHandler(async (event) => {
       nextCursor =
         lastResult && lastResult.createdAt && lastResult.id
           ? `${unixTimestamp}_${lastResult.id}` // Constructing next cursor
-          : null;
+          : "";
     }
 
     return {

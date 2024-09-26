@@ -1,8 +1,8 @@
 <template>
-  <div class="relative mb-5">
+  <div class="relative p-2">
     <!-- Hidden div for enriched content -->
     <div
-      class="w-full h-24 p-2 mb-3 border border-gray-300 rounded-md absolute top-0 left-0 z-0 whitespace-pre-wrap overflow-y-auto pointer-events-none bg-white"
+      class="w-[calc(100%_-_1rem)] h-24 p-2 border border-gray-300 rounded-md absolute top-2 left-2 z-0 whitespace-pre-wrap overflow-y-auto pointer-events-none bg-white"
       v-html="enrichedContent"
     ></div>
 
@@ -10,7 +10,7 @@
     <textarea
       v-model="content"
       placeholder="Write your post here"
-      class="w-full h-24 p-2 mb-3 border border-gray-300 rounded-md bg-transparent relative z-10 caret-black text-transparent whitespace-pre-wrap"
+      class="w-full h-24 p-2 border border-gray-300 rounded-md bg-transparent relative z-10 caret-black text-transparent whitespace-pre-wrap"
     ></textarea>
 
     <div class="flex justify-between items-center mt-2">
@@ -39,7 +39,8 @@ import { faker } from "@faker-js/faker";
 import type { SelectUser } from "~/db/schema";
 import type { AuthoredPostWithHeight } from "./FeedPost.vue";
 
-// State and variables
+const route = useRoute();
+const viewPortWidth = useState("viewPortWidth", () => 0);
 const posts = useState<AuthoredPostWithHeight[]>("posts", () => []);
 const user = useState<SelectUser>("user", () => ({
   createdAt: new Date(),
@@ -59,7 +60,7 @@ const postNewPost = async () => {
   const randomImage =
     faker.image.urlPicsumPhotos({ width: 320, height: 180 }) + ".webp";
 
-  const newPost = {
+  const dummyPost = {
     id: parseInt(Math.random().toString().slice(2, 9), 10),
     content: content.value,
     author: { ...user.value },
@@ -78,16 +79,18 @@ const postNewPost = async () => {
   };
 
   //TODO: Set propper width
-  newPost.height = calculatePostHeight(newPost, 1);
+  dummyPost.height = calculatePostHeight(dummyPost, viewPortWidth.value);
 
   // Optimistic update
-  posts.value = [newPost, ...posts.value];
+  posts.value = [dummyPost, ...posts.value];
 
   // Save to server
   try {
     //TODO: key chained stores of users posts and reactions!!!!! !! ! ! ! !  !
     //TODO: update specific post in state after fetching
-    await $fetch("api/posts", {
+    const { newPost } = await $fetch<{
+      newPost: { lastInsertRowid: number };
+    }>("api/posts", {
       method: "POST",
       body: {
         imageUrl: addFancyPicture.value ? randomImage : null,
@@ -95,14 +98,30 @@ const postNewPost = async () => {
         authorId: user.value.id,
       },
     });
+
+    posts.value = posts.value.map((post) => {
+      if (post.id === dummyPost.id) {
+        console.log(newPost.lastInsertRowid);
+        return {
+          ...post,
+          id: newPost.lastInsertRowid,
+        };
+      }
+      return post;
+    });
+    console.log(posts.value);
   } catch (error) {
     // Revert changes on error
-    posts.value = posts.value.filter((post) => post.id !== newPost.id);
+    posts.value = posts.value.filter((post) => post.id !== dummyPost.id);
     console.error("Error posting new post:", error);
   }
 
   // Clear input
   content.value = "";
+
+  if (route.name !== "feed") {
+    navigateTo("/feed");
+  }
 };
 
 // Computed property to enrich content

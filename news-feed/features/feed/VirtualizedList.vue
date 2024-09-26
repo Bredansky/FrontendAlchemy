@@ -1,9 +1,5 @@
 <template>
-  <div
-    ref="root"
-    :style="rootStyle"
-    class="overflow-auto border-t border-gray-300"
-  >
+  <div ref="root" :style="rootStyle" class="overflow-auto">
     <div
       ref="viewport"
       :style="viewportStyle"
@@ -22,7 +18,7 @@
     <div v-if="loading">
       <SkeletonLoader v-for="i in 4" :key="'loader' + i" />
     </div>
-    <div ref="sentinel" class="h-1"></div>
+    <div ref="sentinel" class="h-[1px]"></div>
   </div>
   <div
     v-if="showPrompt"
@@ -46,24 +42,25 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+import type { AuthoredPostWithHeight } from "./FeedPost.vue";
+
 const STALE_FEED_DURATION = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
 const showPrompt = ref(false);
 
-const sentinel = ref(null); // Define sentinel ref
+const sentinel = ref(null);
 
-const user = useState("user", () => null);
-user.value = await $fetch("/api/users/4").then((result) => result.user);
+const user = useState("user", () => ({ id: 4 }));
 
-const posts = useState("posts", () => []);
+const posts = useState<AuthoredPostWithHeight[]>("posts", () => []);
 
-const cursor = useState("cursor", () => null);
+const cursor = useState("cursor", () => "");
 const lastFetchTime = useState("lastFetchTime", () => Date.now());
 
-const handleResize = (postId) => {
+const handleResize = (postId: number) => {
   posts.value = posts.value.map((post) => {
     if (post.id === postId) {
-      post.height = calculatePostHeight(post, viewport.value.offsetWidth);
+      post.height = calculatePostHeight(post, viewPortWidth.value);
     }
     return post;
   });
@@ -79,30 +76,35 @@ const checkForStaleFeed = () => {
   }
 };
 
-const fetchData = async (size, nextCursor) => {
-  const res = await $fetch("/api/posts", {
+const fetchData = async (size: number, nextCursor: string) => {
+  const res = await $fetch<{
+    posts: AuthoredPostWithHeight[];
+    pagination: {
+      next_cursor: string;
+    };
+  }>("/api/posts", {
     query: { size, cursor: nextCursor, userId: user.value.id },
   });
   return res;
 };
 
 const refreshFeed = async () => {
-  posts.value = []; // Clear existing feed
-  cursor.value = null; // Reset cursor
+  posts.value = [];
+  cursor.value = "";
   showPrompt.value = false;
   window.scrollTo(0, 0);
-  root.value.scrollTop = 0;
-  await fetchPosts(); // Fetch new posts
+  root.value?.scrollTo(0, 0);
+  await fetchPosts();
 };
 
 const fetchPosts = async () => {
   loading.value = true;
-  const data = await fetchData(10, cursor.value || null);
+  const data = await fetchData(10, cursor.value || "");
 
   posts.value = [
     ...posts.value,
     ...data.posts.map((post) => {
-      post.height = calculatePostHeight(post, viewport.value.offsetWidth);
+      post.height = calculatePostHeight(post, viewPortWidth.value);
       return post;
     }),
   ];
@@ -115,13 +117,12 @@ const rootHeight = ref(0);
 
 const scrollTop = useState("scrollTop", () => 0);
 
-// console.log("!!!", posts.value.length, scrollTop.value);
-
 const loading = ref(false);
 
-const root = ref(null); // Define root ref
-const viewport = ref(null); // Define viewport ref
-const spacer = ref(null); // Define spacer ref
+const root = ref<HTMLElement | null>(null);
+const viewport = ref<HTMLElement | null>(null);
+const viewPortWidth = useState("viewPortWidth", () => 0);
+const spacer = ref(null);
 
 const viewportHeight = computed(() => {
   if (posts.value.length === 0) {
@@ -138,12 +139,9 @@ const startIndex = computed(() => {
 
   while (sum < scrollTop.value && index < posts.value.length) {
     const itemHeight = posts.value[index].height;
-    sum += itemHeight !== undefined ? itemHeight : 0; // Use 0 if height is not yet measured
+    sum += itemHeight !== undefined ? itemHeight : 0;
     index++;
   }
-
-  // console.log("startIndex", Math.max(0, index - 1));
-
   return Math.max(0, index - 1);
 });
 
@@ -151,7 +149,6 @@ const visibleNodeCount = computed(() => {
   if (posts.value.length === 0) {
     return 0;
   }
-  // console.log("triggered");
   let count = 1;
   let index = startIndex.value + 1;
   let sum =
@@ -159,24 +156,15 @@ const visibleNodeCount = computed(() => {
 
   while (index < posts.value.length && sum < rootHeight.value) {
     const itemHeight = posts.value[index].height;
-    // console.log(posts.value[index]);
     sum += itemHeight !== undefined ? itemHeight : 0;
     count++;
     index++;
-    // console.log("sum", sum, "count", count, "index", index);
   }
 
-  // console.log("visibleNodeCount", count);
-  // console.log(
-  //   "scrollTop.value",
-  //   scrollTop.value,
-  //   "offsetY.value",
-  //   offsetY.value,
-  // );
   return count;
 });
 
-const visibleItems = computed(() =>
+const visibleItems = computed<AuthoredPostWithHeight[]>(() =>
   posts.value.slice(
     startIndex.value,
     startIndex.value + visibleNodeCount.value,
@@ -205,7 +193,7 @@ const spacerStyle = computed(() => ({
 }));
 
 const handleScroll = () => {
-  scrollTop.value = root.value.scrollTop;
+  scrollTop.value = root.value?.scrollTop || 0;
 };
 
 const updateRootHeight = () => {
@@ -213,29 +201,32 @@ const updateRootHeight = () => {
     document.documentElement.clientHeight || 0,
     window.innerHeight || 0,
   );
-  rootHeight.value = vh - 40;
+  //TODO: No magic numbers
+  rootHeight.value = vh - (41 + 167);
 };
 
 const updatePostsHeight = () => {
   posts.value.map((post) => {
-    post.height = calculatePostHeight(post, viewport.value.offsetWidth);
+    post.height = calculatePostHeight(post, viewPortWidth.value);
     return post;
   });
 };
 
 onMounted(async () => {
-  if (posts.value.length === 0) {
-    fetchPosts();
-  }
-
+  viewPortWidth.value = viewport.value?.offsetWidth || 0;
+  fetchPosts();
   updateRootHeight();
   updatePostsHeight();
   window.addEventListener("resize", () => {
+    viewPortWidth.value = viewport.value?.offsetWidth || 0;
     updateRootHeight();
     updatePostsHeight();
   });
 
-  root.value.scrollTop = scrollTop.value;
+  if (root.value) {
+    root.value.scrollTop = scrollTop.value;
+  }
+
   const doesBrowserSupportPassiveScroll = () => {
     let passiveSupported = false;
     try {
@@ -246,8 +237,8 @@ onMounted(async () => {
         },
       };
 
-      window.addEventListener("test", null, options);
-      window.removeEventListener("test", null, options);
+      window.addEventListener("test", () => {}, options);
+      window.removeEventListener("test", () => {});
     } catch (err) {
       passiveSupported = false;
     }
@@ -255,7 +246,7 @@ onMounted(async () => {
     return passiveSupported;
   };
 
-  root.value.addEventListener(
+  root.value?.addEventListener(
     "scroll",
     handleScroll,
     doesBrowserSupportPassiveScroll() ? { passive: true } : false,
@@ -263,6 +254,7 @@ onMounted(async () => {
 
   const intersectionObserver = new IntersectionObserver(
     (entries) => {
+      console.log(entries);
       if (entries[0].isIntersecting && !loading.value) {
         fetchPosts();
       }
@@ -270,8 +262,11 @@ onMounted(async () => {
     { threshold: 0.5 },
   );
 
-  intersectionObserver.observe(sentinel.value);
+  if (sentinel.value) {
+    intersectionObserver.observe(sentinel.value);
+  }
 
-  setInterval(checkForStaleFeed, 10 * 60 * 1000); // Check every 10 minutes
+  //TODO: No magic numbers
+  setInterval(checkForStaleFeed, 10 * 60 * 1000);
 });
 </script>
