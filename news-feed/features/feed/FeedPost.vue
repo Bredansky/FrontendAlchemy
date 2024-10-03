@@ -1,22 +1,24 @@
 <template>
   <div
-    class="border-b border-gray-300 space-y-1"
+    class="space-y-1 border-b border-gray-300"
     :style="{ height: postHeight }"
   >
     <div class="flex items-center">
       <img
         :src="post.author.profilePhotoUrl"
         alt="Profile Picture"
-        class="w-12 h-12 rounded-full mr-4"
-      />
+        class="mr-4 size-12 rounded-full"
+      >
       <div>
-        <p class="font-semibold mb-1">{{ post.author.nickname }}</p>
-        <p class="text-gray-500 text-sm">
+        <p class="mb-1 font-semibold">
+          {{ post.author.nickname }}
+        </p>
+        <p class="text-sm text-gray-500">
           {{ formatRelativeTime(post.createdAt) }}
         </p>
       </div>
     </div>
-    <p v-html="displayContent"></p>
+    <p v-html="displayContent" />
 
     <p
       v-if="shouldTruncate"
@@ -35,19 +37,19 @@
       <img
         :src="lowResImageUrl"
         alt="Low Resolution Post Image"
-        class="w-full rounded-lg mb-2 cursor-pointer"
-      />
+        class="mb-2 w-full cursor-pointer rounded-lg"
+      >
       <div
-        class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg cursor-pointer"
+        class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg bg-black/50"
         @click="loadHighResImage"
       >
-        <span class="text-white text-lg font-semibold">Click to Load</span>
+        <span class="text-lg font-semibold text-white">Click to Load</span>
       </div>
     </div>
     <div
       v-else-if="(isFastConnection() && post.imageUrl) || imageLoaded"
       ref="imageRef"
-      class="rounded-lg overflow-hidden"
+      class="overflow-hidden rounded-lg"
     >
       <img
         v-if="imageSrc"
@@ -61,27 +63,27 @@
           ${generateImageUrl(imageSrc, 1024, 576)} 1024w,
           ${generateImageUrl(imageSrc, 1280, 720)} 1280w,
         `"
-      />
+      >
     </div>
 
-    <div class="flex justify-between text-gray-700 text-sm">
+    <div class="flex justify-between text-sm text-gray-700">
       <button
         :class="{
-          'bg-blue-500 text-white font-semibold': userReactions.like,
-          'bg-gray-200 text-gray-700': !userReactions.like,
+          'bg-blue-500 font-semibold text-white': userReactions.liked,
+          'bg-gray-200 text-gray-700': !userReactions.liked,
         }"
-        class="px-3 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        @click="toggleReaction('like')"
+        class="rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        @click="toggleReaction('liked')"
       >
         👍 {{ post.reactions.likes }}
       </button>
       <button
         :class="{
-          'bg-blue-500 text-white font-semibold': userReactions.haha,
-          'bg-gray-200 text-gray-700': !userReactions.haha,
+          'bg-blue-500 font-semibold text-white': userReactions.hahaed,
+          'bg-gray-200 text-gray-700': !userReactions.hahaed,
         }"
-        class="px-3 py-1 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        @click="toggleReaction('haha')"
+        class="rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        @click="toggleReaction('hahaed')"
       >
         😂 {{ post.reactions.hahas }}
       </button>
@@ -90,146 +92,153 @@
 </template>
 
 <script setup lang="ts">
-import type { AuthoredPost } from "~/server/api/posts.get";
-import { ref, computed } from "vue";
+import { ref, computed } from 'vue'
+import type { AuthoredPost } from '~/server/api/posts.get'
 
 export interface AuthoredPostWithHeight extends AuthoredPost {
-  height: number;
+  height: number
 }
 
 const props = defineProps<{
-  post: AuthoredPostWithHeight;
-  root: Element | null;
-}>();
+  post: AuthoredPostWithHeight
+  root: Element | null
+}>()
 
 const userReactions = ref({
-  like: props.post.currentUserReaction.liked,
-  haha: props.post.currentUserReaction.hahaed,
-});
+  liked: props.post.currentUserReaction.liked,
+  hahaed: props.post.currentUserReaction.hahaed,
+})
 
-const user = useState("user", () => ({ id: 4 }));
+const postReactions = ref({
+  likes: props.post.reactions.likes,
+  hahas: props.post.reactions.hahas,
+})
+
+const user = useState('user', () => ({ id: 4 }))
 
 const formatRelativeTime = (timestamp: Date) => {
-  const now = new Date();
-  const postDate = new Date(timestamp);
-  const timeDifference = Number(now) - Number(postDate);
+  const now = new Date()
+  const postDate = new Date(timestamp)
+  const timeDifference = Number(now) - Number(postDate)
 
-  const seconds = Math.floor(timeDifference / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+  const seconds = Math.floor(timeDifference / 1000)
+  const minutes = Math.floor(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  const days = Math.floor(hours / 24)
 
   // If the post is older than 1 day, return the formatted date
   if (days >= 1) {
-    return formatDate(timestamp);
-  } else if (hours > 0) {
-    return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  } else if (minutes > 0) {
-    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
-  } else if (seconds >= 10) {
-    return `${seconds} second${seconds === 1 ? "" : "s"} ago`;
-  } else {
-    return "Just now";
+    return formatDate(timestamp)
   }
-};
+  else if (hours > 0) {
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  }
+  else if (minutes > 0) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`
+  }
+  else if (seconds >= 10) {
+    return `${seconds} second${seconds === 1 ? '' : 's'} ago`
+  }
+  else {
+    return 'Just now'
+  }
+}
 
 const formatDate = (timestamp: Date) => {
-  const userLocale = process.client
+  const userLocale = import.meta.client
     ? navigator.language || navigator.languages[0]
-    : "en-US";
+    : 'en-US'
 
-  const date = new Date(timestamp);
+  const date = new Date(timestamp)
 
   const formattedTime = new Intl.DateTimeFormat(userLocale, {
-    hour: "numeric",
-    minute: "numeric",
-    hourCycle: "h23", // or 'h12'
-  }).format(date);
+    hour: 'numeric',
+    minute: 'numeric',
+    hourCycle: 'h23', // or 'h12'
+  }).format(date)
 
   const formattedDate = new Intl.DateTimeFormat(userLocale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(date);
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date)
 
-  return `${formattedTime} · ${formattedDate}`;
-};
+  return `${formattedTime} · ${formattedDate}`
+}
 
 // Truncation logic
 
-const maxChars = 300; // Max number of characters to display before truncation
-const isExpanded = ref(false);
-const postHeight = ref(props.post.height + "px");
+const maxChars = 300 // Max number of characters to display before truncation
+const isExpanded = ref(false)
+const postHeight = ref(props.post.height + 'px')
 // const postHeight = computed(() => {
 //   console.log(isExpanded.value);
 //   return isExpanded.value ? "unset" : props.post.height + "px";
 // });
-//TODO: Computed no needed actually
-const shouldTruncate = computed(() => props.post.content.length > maxChars);
+// TODO: Computed no needed actually
+const shouldTruncate = computed(() => props.post.content.length > maxChars)
 
 // Toggle expansion of the content
 const toggleExpand = () => {
-  postHeight.value = "unset";
-  isExpanded.value = !isExpanded.value;
-  emitResize();
-};
+  postHeight.value = 'unset'
+  isExpanded.value = !isExpanded.value
+  emitResize()
+}
 
 // Display content (either truncated or full)
 const displayContent = computed(() => {
   if (isExpanded.value || !shouldTruncate.value) {
-    return props.post.content;
+    return enrichContent(props.post.content)
   }
-  return props.post.content.substring(0, maxChars).trim() + "...";
-});
+  return enrichContent(props.post.content.substring(0, maxChars).trim() + '...')
+})
 
 // Emit resize event
-const emit = defineEmits(["resize"]);
+const emit = defineEmits(['resize'])
 const emitResize = () => {
-  emit("resize", props.post.id);
-};
+  emit('resize', props.post.id)
+}
 
-const toggleReaction = async (reactionType: "like" | "haha") => {
+const toggleReaction = async (reactionType: 'liked' | 'hahaed') => {
   try {
-    const isActive = userReactions.value[reactionType];
-    const action = isActive ? "unreact" : "react";
-    const userId = user.value.id; // Replace with actual user ID
+    const isActive = userReactions.value[reactionType]
+    const action = isActive ? 'unreact' : 'react'
+    const userId = user.value.id // Replace with actual user ID
 
-    // Optimistically update the UI
-    if (reactionType === "like") {
-      props.post.reactions.likes += isActive ? -1 : 1;
-      userReactions.value.like = !isActive;
-    } else if (reactionType === "haha") {
-      props.post.reactions.hahas += isActive ? -1 : 1;
-      userReactions.value.haha = !isActive;
+    if (reactionType === 'liked') {
+      postReactions.value.likes += isActive ? -1 : 1
+      userReactions.value.liked = !isActive
     }
-
-    console.log("post id", props.post);
+    else if (reactionType === 'hahaed') {
+      postReactions.value.hahas += isActive ? -1 : 1
+      userReactions.value.hahaed = !isActive
+    }
 
     await $fetch(`/api/posts/${props.post.id}/react`, {
-      method: "PUT",
+      method: 'PUT',
       body: JSON.stringify({ action, reactionType, userId }),
-    });
-  } catch (error) {
-    console.error(`Error toggling ${reactionType} reaction:`, error);
+    })
+  }
+  catch (error) {
+    console.error(`Error toggling ${reactionType} reaction:`, error)
 
     // Revert the optimistic update if the API call fails
-    if (reactionType === "like") {
-      props.post.reactions.likes += userReactions.value.like ? -1 : 1;
-      userReactions.value.like = !userReactions.value.like;
-    } else if (reactionType === "haha") {
-      props.post.reactions.hahas += userReactions.value.haha ? -1 : 1;
-      userReactions.value.haha = !userReactions.value.haha;
+    if (reactionType === 'liked') {
+      postReactions.value.likes += userReactions.value.liked ? -1 : 1
+      userReactions.value.liked = !userReactions.value.liked
+    }
+    else if (reactionType === 'hahaed') {
+      postReactions.value.hahas += userReactions.value.hahaed ? -1 : 1
+      userReactions.value.hahaed = !userReactions.value.hahaed
     }
   }
-};
+}
 
-// Computed property to enrich content
-// TODO: Why is it computed?
-const enrichedContent = computed(() => {
-  const hashtagPattern = /#(\w+)/g;
-  const mentionPattern = /@(\w+)/g;
+const enrichContent = (text: string) => {
+  const hashtagPattern = /#(\w+)/g
+  const mentionPattern = /@(\w+)/g
 
-  const newContent = props.post.content
+  const newContent = text
     .replace(
       hashtagPattern,
       '<span class="text-blue-500 font-semibold">#$1</span>',
@@ -237,55 +246,55 @@ const enrichedContent = computed(() => {
     .replace(
       mentionPattern,
       '<span class="text-blue-500 font-semibold">@$1</span>',
-    );
+    )
 
-  return newContent;
-});
+  return newContent
+}
 
-const imageSrc = ref("");
-const imageRef = ref(null);
-const imageLoaded = ref(false);
+const imageSrc = ref('')
+const imageRef = ref(null)
+const imageLoaded = ref(false)
 
 const isFastConnection = () => {
   if (import.meta.client && navigator.connection) {
-    const connectionType = navigator.connection.effectiveType;
-    return connectionType === "4g" || navigator.connection.saveData === false;
+    const connectionType = navigator.connection.effectiveType
+    return connectionType === '4g' || navigator.connection.saveData === false
   }
-  return true;
-};
+  return true
+}
 
-//TODO: Get rid off
+// TODO: Get rid off
 const isPoorConnection = (): boolean => {
-  return !isFastConnection();
-};
+  return !isFastConnection()
+}
 
 const generateLowResImageUrl = (url: string) => {
-  if (!url) return "";
+  if (!url) return ''
 
-  const urlParts = url.split("/");
+  const urlParts = url.split('/')
 
-  const lowResWidth = "80";
-  const lowResHeight = "45";
+  const lowResWidth = '80'
+  const lowResHeight = '45'
 
-  urlParts[urlParts.length - 2] = lowResWidth;
-  urlParts[urlParts.length - 1] = lowResHeight;
+  urlParts[urlParts.length - 2] = lowResWidth
+  urlParts[urlParts.length - 1] = lowResHeight
 
-  return urlParts.join("/") + "?blur=3";
-};
+  return urlParts.join('/') + '?blur=3'
+}
 
-//TODO: Call this function once for the whole srcset lmao
+// TODO: Call this function once for the whole srcset lmao
 const generateImageUrl = (url: string, width: number, height: number) => {
-  if (!url) return "";
+  if (!url) return ''
 
-  const urlParts = url.split("/");
+  const urlParts = url.split('/')
 
-  urlParts[urlParts.length - 2] = width.toString();
-  urlParts[urlParts.length - 1] = height.toString();
+  urlParts[urlParts.length - 2] = width.toString()
+  urlParts[urlParts.length - 1] = height.toString()
 
-  return urlParts.join("/") + ".webp";
-};
+  return urlParts.join('/') + '.webp'
+}
 
-const lowResImageUrl = generateLowResImageUrl(props.post.imageUrl || "");
+const lowResImageUrl = generateLowResImageUrl(props.post.imageUrl || '')
 
 const handleVisibilityChange = (
   entries: IntersectionObserverEntry[],
@@ -294,53 +303,53 @@ const handleVisibilityChange = (
   entries.forEach((entry) => {
     if (entry.isIntersecting) {
       if (isFastConnection()) {
-        imageSrc.value = props.post.imageUrl || ""; // Fallback to empty string if null
+        imageSrc.value = props.post.imageUrl || '' // Fallback to empty string if null
       }
-      observer.unobserve(entry.target);
+      observer.unobserve(entry.target)
     }
-  });
-};
+  })
+}
 
 const loadHighResImage = () => {
-  imageSrc.value = props.post.imageUrl || "";
-  imageLoaded.value = true;
-};
+  imageSrc.value = props.post.imageUrl || ''
+  imageLoaded.value = true
+}
 
-const relativeTimestamp = ref("");
+const relativeTimestamp = ref('')
 
 const updateTimestamp = () => {
-  relativeTimestamp.value = formatRelativeTime(props.post.createdAt);
-};
+  relativeTimestamp.value = formatRelativeTime(props.post.createdAt)
+}
 
 onMounted(() => {
-  const connectionIsFast = isFastConnection();
+  const connectionIsFast = isFastConnection()
 
   if (imageRef.value) {
     if (connectionIsFast) {
       // For fast connections, use IntersectionObserver with a rootMargin
       const observer = new IntersectionObserver(handleVisibilityChange, {
         root: props.root,
-        rootMargin: "500px", // Pre-fetch the image
-      });
-      observer.observe(imageRef.value);
+        rootMargin: '500px', // Pre-fetch the image
+      })
+      observer.observe(imageRef.value)
     }
   }
 
-  updateTimestamp();
+  updateTimestamp()
 
-  const postDate = new Date(props.post.createdAt);
-  const now = new Date();
-  const timeDifference = Number(now) - Number(postDate);
+  const postDate = new Date(props.post.createdAt)
+  const now = new Date()
+  const timeDifference = Number(now) - Number(postDate)
 
   if (timeDifference < 24 * 60 * 60 * 1000) {
     // Update every minute if the post is less than 24 hours old
     const interval = setInterval(() => {
-      updateTimestamp();
-    }, 60000);
+      updateTimestamp()
+    }, 60000)
 
     onUnmounted(() => {
-      clearInterval(interval);
-    });
+      clearInterval(interval)
+    })
   }
-});
+})
 </script>
