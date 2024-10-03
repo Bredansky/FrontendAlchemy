@@ -33,28 +33,11 @@
       class="h-px"
     />
   </div>
-  <div
+  <LazyStaleFeedPrompt
     v-if="showPrompt"
-    class="fixed left-0 top-0 z-50 flex size-full items-center justify-center bg-gray-900/50"
-  >
-    <div class="rounded bg-white p-4 shadow-lg">
-      <p class="mb-4">
-        The feed is stale. Do you want to refresh?
-      </p>
-      <button
-        class="rounded bg-blue-500 px-4 py-2 text-white"
-        @click="refreshFeed()"
-      >
-        Refresh
-      </button>
-      <button
-        class="ml-2 rounded bg-gray-300 px-4 py-2 text-gray-700"
-        @click="showPrompt = false"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
+    @close-prompt="showPrompt=false"
+    @refresh-feed="refreshFeed"
+  />
 </template>
 
 <script setup lang="ts">
@@ -217,7 +200,9 @@ const updateRootHeight = () => {
     window.innerHeight || 0,
   )
   // TODO: No magic numbers
-  rootHeight.value = vh - (41 + 167)
+  // TODO: Add to some sort of measurments config or something in utils
+  // TODO: Set those values to the specific components as well to sctrictly control them
+  rootHeight.value = vh - (root.value?.offsetWidth || 0 < 768 ? 41 : 41 + 167)
 }
 
 const updatePostsHeight = () => {
@@ -284,4 +269,8 @@ onMounted(async () => {
   // TODO: No magic numbers
   setInterval(checkForStaleFeed, 10 * 60 * 1000)
 })
+
+const LazyStaleFeedPrompt = defineAsyncComponent(() =>
+  import('./StaleFeedPrompt.vue'),
+)
 </script>
