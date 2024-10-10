@@ -33,27 +33,34 @@
       class="h-px"
     />
   </div>
-  <LazyStaleFeedPrompt
-    v-if="showPrompt"
-    @close-prompt="showPrompt=false"
-    @refresh-feed="refreshFeed"
-  />
 </template>
 
 <script setup lang="ts">
 import type { AuthoredPostWithHeight } from './FeedPost.vue'
+
+const props = defineProps({
+  fetchData: {
+    type: Function as PropType<(size: number, cursor: string) => Promise<{
+      posts: AuthoredPostWithHeight[]
+      pagination: { next_cursor: string | null }
+    }>>,
+    required: true,
+  },
+})
 
 const STALE_FEED_DURATION = 3 * 60 * 60 * 1000 // 3 hours in milliseconds
 const showPrompt = ref(false)
 
 const sentinel = ref(null)
 
-const user = useState('user', () => ({ id: 4 }))
-
 const posts = useState<AuthoredPostWithHeight[]>('posts', () => [])
 
-const cursor = useState('cursor', () => '')
 const lastFetchTime = useState('lastFetchTime', () => Date.now())
+
+let intersectionObserver: IntersectionObserver
+
+const errorState = useState('errorState', () => '')
+const cursor = useState<string | null>('cursor', () => null)
 
 const handleResize = (postId: number) => {
   posts.value = posts.value.map((post) => {
@@ -74,41 +81,46 @@ const checkForStaleFeed = () => {
   }
 }
 
-const fetchData = async (size: number, nextCursor: string) => {
-  const res = await $fetch<{
-    posts: AuthoredPostWithHeight[]
-    pagination: {
-      next_cursor: string
-    }
-  }>('/api/posts', {
-    query: { size, cursor: nextCursor, userId: user.value.id },
-  })
-  return res
-}
-
-const refreshFeed = async () => {
-  posts.value = []
-  cursor.value = ''
-  showPrompt.value = false
-  window.scrollTo(0, 0)
-  root.value?.scrollTo(0, 0)
-  await fetchPosts()
-}
+watch(posts, (newPosts) => {
+  if (newPosts.length === 0) {
+    root.value?.scrollTo(0, 0)
+  }
+})
 
 const fetchPosts = async () => {
   loading.value = true
-  const data = await fetchData(10, cursor.value || '')
 
-  posts.value = [
-    ...posts.value,
-    ...data.posts.map((post) => {
-      post.height = calculatePostHeight(post, viewPortWidth.value)
-      return post
-    }),
-  ]
-  cursor.value = data.pagination.next_cursor
-  lastFetchTime.value = Date.now()
-  loading.value = false
+  errorState.value = ''
+
+  try {
+    const postsToFetch = Math.ceil(viewportHeight.value / MINIMAL_POST_HEIGHT) + BUFFER_AMOUNT_OF_POSTS
+
+    const data = await props.fetchData(postsToFetch, cursor.value || '')
+
+    posts.value = [
+      ...posts.value,
+      ...data.posts.map((post) => {
+        post.height = calculatePostHeight(post, viewPortWidth.value)
+        return post
+      }),
+    ]
+    cursor.value = data.pagination.next_cursor
+    lastFetchTime.value = Date.now()
+    loading.value = false
+
+    if (!data.pagination.next_cursor) {
+      if (sentinel.value) {
+        intersectionObserver.unobserve(sentinel.value)
+      }
+    }
+  }
+  catch (error) {
+    console.error('Error fetching posts:', error)
+    errorState.value = 'Failed to load posts. Please try again.'
+  }
+  finally {
+    loading.value = false
+  }
 }
 
 const rootHeight = ref(0)
@@ -253,7 +265,7 @@ onMounted(async () => {
     doesBrowserSupportPassiveScroll() ? { passive: true } : false,
   )
 
-  const intersectionObserver = new IntersectionObserver(
+  intersectionObserver = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting && !loading.value) {
         fetchPosts()
@@ -269,8 +281,4 @@ onMounted(async () => {
   // TODO: No magic numbers
   setInterval(checkForStaleFeed, 10 * 60 * 1000)
 })
-
-const LazyStaleFeedPrompt = defineAsyncComponent(() =>
-  import('./StaleFeedPrompt.vue'),
-)
 </script>

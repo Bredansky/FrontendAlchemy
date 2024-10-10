@@ -22,6 +22,7 @@
     "better-sqlite3": "^9.4.3",
     "drizzle-orm": "^0.29.4",
     "eslint-plugin-tailwindcss": "^3.17.4",
+    "vite-plugin-eslint2": "^5.0.0",
     "vue": "^3.4.19",
     "vue-router": "^4.2.5"
   },
