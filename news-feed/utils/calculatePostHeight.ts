@@ -1,4 +1,4 @@
-import type { AuthoredPostWithHeight } from '~/features/feed/FeedPost.vue'
+import type { AuthoredPost } from '~/server/api/posts.get'
 
 // TODO: Reuse those in actual styles
 const reactionsHeight = 28
@@ -39,7 +39,7 @@ function calculateTextHeight(text: string, width: number) {
 }
 
 export const calculatePostHeight = (
-  post: AuthoredPostWithHeight,
+  post: AuthoredPost,
   width: number,
 ) => {
   const textHeight = calculateTextHeight(post.content, width) + gapHeight

@@ -75,7 +75,7 @@
         class="rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
         @click="toggleReaction('liked')"
       >
-        👍 {{ post.reactions.likes }}
+        👍 {{ postReactions.likes }}
       </button>
       <button
         :class="{
@@ -85,16 +85,16 @@
         class="rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
         @click="toggleReaction('hahaed')"
       >
-        😂 {{ post.reactions.hahas }}
+        😂 {{ postReactions.hahas }}
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import type { AuthoredPost } from '~/server/api/posts.get'
 
+// TODO: To types or something
 export interface AuthoredPostWithHeight extends AuthoredPost {
   height: number
 }
@@ -104,17 +104,12 @@ const props = defineProps<{
   root: Element | null
 }>()
 
-const userReactions = ref({
-  liked: props.post.currentUserReaction.liked,
-  hahaed: props.post.currentUserReaction.hahaed,
-})
+const { user } = await useUser('4')
 
-const postReactions = ref({
-  likes: props.post.reactions.likes,
-  hahas: props.post.reactions.hahas,
-})
-
-const user = useState('user', () => ({ id: 4 }))
+const { userReactions, postReactions, toggleReaction } = usePostReactions(
+  props.post,
+  user.value!.id.toString(),
+)
 
 const formatRelativeTime = (timestamp: Date) => {
   const now = new Date()
@@ -197,41 +192,6 @@ const displayContent = computed(() => {
 const emit = defineEmits(['resize'])
 const emitResize = () => {
   emit('resize', props.post.id)
-}
-
-const toggleReaction = async (reactionType: 'liked' | 'hahaed') => {
-  try {
-    const isActive = userReactions.value[reactionType]
-    const action = isActive ? 'unreact' : 'react'
-    const userId = user.value.id // Replace with actual user ID
-
-    if (reactionType === 'liked') {
-      postReactions.value.likes += isActive ? -1 : 1
-      userReactions.value.liked = !isActive
-    }
-    else if (reactionType === 'hahaed') {
-      postReactions.value.hahas += isActive ? -1 : 1
-      userReactions.value.hahaed = !isActive
-    }
-
-    await $fetch(`/api/posts/${props.post.id}/react`, {
-      method: 'PUT',
-      body: JSON.stringify({ action, reactionType, userId }),
-    })
-  }
-  catch (error) {
-    console.error(`Error toggling ${reactionType} reaction:`, error)
-
-    // Revert the optimistic update if the API call fails
-    if (reactionType === 'liked') {
-      postReactions.value.likes += userReactions.value.liked ? -1 : 1
-      userReactions.value.liked = !userReactions.value.liked
-    }
-    else if (reactionType === 'hahaed') {
-      postReactions.value.hahas += userReactions.value.hahaed ? -1 : 1
-      userReactions.value.hahaed = !userReactions.value.hahaed
-    }
-  }
 }
 
 const enrichContent = (text: string) => {
