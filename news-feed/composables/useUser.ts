@@ -1,8 +1,7 @@
 import type { SelectUser } from '~/db/schema'
 
 export async function useUser(userId: string) {
-  // Explicitly define the user type to allow null or SelectUser
-  const user = ref<SelectUser | null>(null) // Global user state
+  const user = ref<SelectUser | null>(null)
   const errorState = useState('errorState', () => '')
 
   if (!user.value) {

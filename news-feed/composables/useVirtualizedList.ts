@@ -29,7 +29,7 @@ export function useVirtualizedList({
   const loading = ref(false)
   const errorState = ref('')
   const rootHeight = ref(0)
-  const viewPortWidth = ref(0)
+  const viewPortWidth = useState('viewPortWidth', () => 0)
   const scrollTop = useState('scrollTop', () => 0)
 
   let intersectionObserver: IntersectionObserver | null = null
