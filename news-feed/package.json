@@ -14,7 +14,8 @@
     "seed": "tsx db/seed.ts",
     "dk:migrate": "drizzle-kit migrate",
     "dk:generate": "drizzle-kit generate",
-    "dk:push": "drizzle-kit push"
+    "dk:push": "drizzle-kit push",
+    "vercel-build": "npm run generate && npm run seed && nuxt build"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
