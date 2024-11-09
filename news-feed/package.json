@@ -15,7 +15,7 @@
     "dk:migrate": "drizzle-kit migrate",
     "dk:generate": "drizzle-kit generate",
     "dk:push": "drizzle-kit push",
-    "vercel-build": "npm run generate && npm run seed && nuxt build"
+    "vercel-build": "pnpm build && pnpm dk:migrate && pnpm seed"
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
