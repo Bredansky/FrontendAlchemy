@@ -1,5 +1,7 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/vercel-postgres'
+import { sql } from '@vercel/postgres'
+import { config } from 'dotenv'
 
-const sqlite = new Database('sqlite.db')
-export const db = drizzle(sqlite)
+config({ path: '.env' }) // or .env
+
+export const db = drizzle(sql)

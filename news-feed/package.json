@@ -20,8 +20,10 @@
   "dependencies": {
     "@faker-js/faker": "^8.4.1",
     "@types/better-sqlite3": "^7.6.9",
+    "@vercel/postgres": "^0.10.0",
     "better-sqlite3": "^9.4.3",
-    "drizzle-orm": "^0.29.4",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.29.5",
     "eslint-plugin-tailwindcss": "^3.17.4",
     "vite-plugin-eslint2": "^5.0.0",
     "vue": "^3.4.19",

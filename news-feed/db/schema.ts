@@ -1,51 +1,45 @@
-import { sql } from 'drizzle-orm'
-import {
-  integer,
-  sqliteTable,
-  text,
-  type AnySQLiteColumn,
-} from 'drizzle-orm/sqlite-core'
+import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
 
-export const users = sqliteTable('users', {
-  id: integer('id').primaryKey(),
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(), // Use serial for auto-incrementing primary keys
   nickname: text('nickname').notNull(),
   profilePhotoUrl: text('profile_photo_url').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: timestamp('created_at')
     .notNull()
-    .default(sql`(unixepoch())`),
-})
+    .defaultNow(), // Use timestamp and defaultNow() for the createdAt field
+});
 
-export type SelectUser = typeof users.$inferSelect
-export type InsertUser = typeof users.$inferInsert
+export type SelectUser = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
 
-export const posts = sqliteTable('posts', {
-  id: integer('id').primaryKey(),
+export const posts = pgTable('posts', {
+  id: serial('id').primaryKey(),
   authorId: integer('author_id')
     .notNull()
-    .references((): AnySQLiteColumn => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }), // Adding onDelete cascade for referential integrity
   content: text('content').notNull(),
   imageUrl: text('image_url'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: timestamp('created_at')
     .notNull()
-    .default(sql`(unixepoch())`),
-})
+    .defaultNow(), // Same as above, use timestamp with defaultNow()
+});
 
-export type SelectPost = typeof posts.$inferSelect
-export type InsertPost = typeof posts.$inferInsert
+export type SelectPost = typeof posts.$inferSelect;
+export type InsertPost = typeof posts.$inferInsert;
 
-export const reactions = sqliteTable('reactions', {
-  id: integer('id').primaryKey(),
+export const reactions = pgTable('reactions', {
+  id: serial('id').primaryKey(),
   postId: integer('post_id')
     .notNull()
-    .references((): AnySQLiteColumn => posts.id),
+    .references(() => posts.id, { onDelete: 'cascade' }), // onDelete cascade for referential integrity
   userId: integer('user_id')
     .notNull()
-    .references((): AnySQLiteColumn => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }), // onDelete cascade for referential integrity
   type: text('type').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
+  createdAt: timestamp('created_at')
     .notNull()
-    .default(sql`(unixepoch())`),
-})
+    .defaultNow(), // Use timestamp with defaultNow()
+});
 
-export type SelectReaction = typeof reactions.$inferSelect
-export type InsertReaction = typeof reactions.$inferInsert
+export type SelectReaction = typeof reactions.$inferSelect;
+export type InsertReaction = typeof reactions.$inferInsert;
