@@ -2,15 +2,24 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
 
+  modules: ['@nuxtjs/tailwindcss', '@nuxt/eslint'],
+
   typescript: {
     typeCheck: true,
     strict: true,
   },
 
+  eslint: {
+    config: {
+      stylistic: true,
+    },
+    checker: true,
+  },
+
   components: [
     {
-      path: "~/features",
+      path: '~/features',
       pathPrefix: false,
     },
   ],
-});
+})

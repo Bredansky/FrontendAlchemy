@@ -1,60 +1,143 @@
-import { type InsertPost, type InsertUser, posts, users } from "@/db/schema";
-import { db } from "@/db";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql, or, and, exists } from 'drizzle-orm'
+import {
+  posts,
+  users,
+  reactions,
+  type SelectPost,
+  type SelectUser,
+} from '@/db/schema'
+import { db } from '@/db'
 
-// Define an aggregation function
-function aggregatePostsAndUsers(
-  postsAndUsers: { posts: InsertPost; users: InsertUser }[],
-) {
-  return postsAndUsers.map(({ posts, users }) => {
-    return {
-      id: posts.id,
-      author: {
-        nickname: users.nickname,
-        profilePhotoUrl: users.profilePhotoUrl,
-      },
-      content: posts.content,
-      image: posts.image_url,
-      reactions: posts.reactions,
-    };
-  });
+export interface AuthoredPost extends SelectPost {
+  author: Pick<SelectUser, 'nickname' | 'profilePhotoUrl'>
+  reactions: {
+    likes: number
+    hahas: number
+  }
+  currentUserReaction: {
+    liked: boolean
+    hahaed: boolean
+  }
 }
 
 export default defineEventHandler(async (event) => {
   try {
-    const { size, cursor } = getQuery(event);
+    const { size, cursor, userId } = getQuery(event)
 
-    let query = db
-      .select()
-      .from(posts)
-      .innerJoin(users, eq(users.id, posts.authorId))
-      .orderBy(posts.id) // Assuming 'id' is the primary key
-      .limit(Number(size) + 1); // Fetch one extra to check if there's more data
-
-    if (cursor) {
-      query = query.where(sql`${posts.id} > ${cursor}`) as typeof query;
+    if (!userId) {
+      throw new Error('Invalid userId')
     }
 
-    const results = await query.all();
-    const aggregatedResult = aggregatePostsAndUsers(results);
+    const validUserId = Array.isArray(userId)
+      ? parseInt(userId[0], 10)
+      : parseInt(userId.toString(), 10)
 
-    let nextCursor = null;
+    let query = db
+      .select({
+        post: posts,
+        user: users,
+        // Couldn't achieve compatible type using drizzle-orm methods
+        likes: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'like')`, // Count likes for each post
+        hahas: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'haha')`, // Count hahas for each post
+        liked: exists(
+          db
+            .select()
+            .from(reactions)
+            .where(
+              and(
+                eq(reactions.postId, posts.id),
+                eq(reactions.userId, validUserId),
+                eq(reactions.type, 'like'),
+              ),
+            ),
+        ),
+        hahaed: exists(
+          db
+            .select()
+            .from(reactions)
+            .where(
+              and(
+                eq(reactions.postId, posts.id),
+                eq(reactions.userId, validUserId),
+                eq(reactions.type, 'haha'),
+              ),
+            ),
+        ),
+      })
+      .from(posts)
+      .leftJoin(users, eq(users.id, posts.authorId))
+      .orderBy(desc(posts.id), desc(posts.createdAt)) // Using 'id' as a tiebreaker
+      .limit(Number(size) + 1) // Fetch one extra to check if there's more data
 
-    if (results.length > Number(size)) {
+    if (cursor) {
+      const [cursorCreatedAt, cursorId] = cursor.toString().split('_')
+      query = query.where(
+        or(
+          sql`${posts.createdAt} < ${cursorCreatedAt}`,
+          sql`${posts.createdAt} = ${cursorCreatedAt} AND ${posts.id} < ${cursorId}`,
+        ),
+      ) as typeof query
+    }
+
+    const results = await query.all()
+
+    const aggregatedResults = results
+      .map(({ post, user, likes, hahas, liked, hahaed }) => {
+        if (!user) {
+          return null
+        }
+
+        return {
+          ...post,
+          author: {
+            nickname: user.nickname,
+            profilePhotoUrl: user.profilePhotoUrl,
+          },
+          reactions: {
+            likes,
+            hahas,
+          },
+          currentUserReaction: {
+            liked: !!liked, // Cast to boolean
+            hahaed: !!hahaed, // Cast to boolean
+          },
+        }
+      })
+      .filter(post => post !== null)
+
+    let nextCursor = null
+
+    if (!cursor || results.length > Number(size)) {
       // If we fetched more than requested, there are more results available
-      const lastResult = aggregatedResult.pop();
-      nextCursor =
-        lastResult && lastResult.id ? lastResult.id.toString() : null; // Assuming 'id' is the cursor
+      const lastResult = aggregatedResults[aggregatedResults.length - 1]
+      const dateObject = lastResult
+        ? new Date(lastResult.createdAt)
+        : new Date()
+      const unixTimestamp = Math.floor(dateObject.getTime() / 1000)
+
+      nextCursor
+        = lastResult && lastResult.createdAt && lastResult.id
+          ? `${unixTimestamp}_${lastResult.id}` // Constructing next cursor
+          : null
     }
 
     return {
       pagination: { size, next_cursor: nextCursor },
-      posts: aggregatedResult,
-    };
-  } catch (e: any) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: e.message,
-    });
+      posts: aggregatedResults,
+    }
   }
-});
+  catch (e: unknown) {
+    if (e instanceof Error) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: e.message,
+      })
+    }
+    else {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'An unknown error occurred',
+      })
+    }
+  }
+})
