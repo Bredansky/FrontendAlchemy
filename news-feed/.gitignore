@@ -25,4 +25,4 @@ logs
 
 # Database
 sqlite.db
-drizzle
+.drizzle

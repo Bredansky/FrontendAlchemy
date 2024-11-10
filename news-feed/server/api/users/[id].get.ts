@@ -6,12 +6,12 @@ export default defineEventHandler(async (event) => {
   try {
     // get id as function parameter from route params
     const userId = event.context.params?.id as string
-    const usersResp = db
+    const usersResp = await db
       .select()
       .from(users)
       .where(eq(users.id, parseInt(userId)))
-      .get()
-    return { user: usersResp }
+
+    return { user: usersResp[0] }
   }
   catch (e: unknown) {
     if (e instanceof Error) {

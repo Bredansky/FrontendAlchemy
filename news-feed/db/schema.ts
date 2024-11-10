@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+import { integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(), // Use serial for auto-incrementing primary keys
@@ -7,10 +7,10 @@ export const users = pgTable('users', {
   createdAt: timestamp('created_at')
     .notNull()
     .defaultNow(), // Use timestamp and defaultNow() for the createdAt field
-});
+})
 
-export type SelectUser = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
+export type SelectUser = typeof users.$inferSelect
+export type InsertUser = typeof users.$inferInsert
 
 export const posts = pgTable('posts', {
   id: serial('id').primaryKey(),
@@ -22,10 +22,10 @@ export const posts = pgTable('posts', {
   createdAt: timestamp('created_at')
     .notNull()
     .defaultNow(), // Same as above, use timestamp with defaultNow()
-});
+})
 
-export type SelectPost = typeof posts.$inferSelect;
-export type InsertPost = typeof posts.$inferInsert;
+export type SelectPost = typeof posts.$inferSelect
+export type InsertPost = typeof posts.$inferInsert
 
 export const reactions = pgTable('reactions', {
   id: serial('id').primaryKey(),
@@ -39,7 +39,7 @@ export const reactions = pgTable('reactions', {
   createdAt: timestamp('created_at')
     .notNull()
     .defaultNow(), // Use timestamp with defaultNow()
-});
+})
 
-export type SelectReaction = typeof reactions.$inferSelect;
-export type InsertReaction = typeof reactions.$inferInsert;
+export type SelectReaction = typeof reactions.$inferSelect
+export type InsertReaction = typeof reactions.$inferInsert

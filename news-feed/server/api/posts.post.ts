@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     if ((!body.content || body.content.trim() === '') && !body.imageUrl) {
       throw new Error('Post must have either content or an image.')
     }
-    const result = db.insert(posts).values(body).run()
+    const result = db.insert(posts).values(body).execute()
     return { newPost: result }
   }
   catch (e: unknown) {

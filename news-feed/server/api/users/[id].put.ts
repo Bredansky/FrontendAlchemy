@@ -9,11 +9,12 @@ export default defineEventHandler(async (event) => {
     const editUser: InsertUser = {
       ...body,
     }
+
     const usersResp = db
       .update(users)
       .set(editUser)
       .where(eq(users.id, parseInt(userId)))
-      .run()
+      .execute()
     return { user: usersResp }
   }
   catch (e: unknown) {

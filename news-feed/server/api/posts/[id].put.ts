@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
       .update(posts)
       .set(editpost)
       .where(eq(posts.id, parseInt(postId)))
-      .run()
+      .execute()
     return { post: postsResp }
   }
   catch (e: unknown) {

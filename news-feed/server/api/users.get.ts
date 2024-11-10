@@ -3,7 +3,7 @@ import { db } from '@/db'
 
 export default defineEventHandler(async () => {
   try {
-    const usersResp = db.select().from(users).all()
+    const usersResp = db.select().from(users).execute()
     return { users: usersResp }
   }
   catch (e: unknown) {

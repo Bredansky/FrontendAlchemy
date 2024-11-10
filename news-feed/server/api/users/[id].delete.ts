@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
     const usersResp = db
       .delete(users)
       .where(eq(users.id, parseInt(userId)))
-      .run()
+      .execute()
     return { user: usersResp }
   }
   catch (e: unknown) {

@@ -36,9 +36,8 @@ export default defineEventHandler(async (event) => {
       .select({
         post: posts,
         user: users,
-        // Couldn't achieve compatible type using drizzle-orm methods
-        likes: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'like')`, // Count likes for each post
-        hahas: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'haha')`, // Count hahas for each post
+        likes: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'like')`,
+        hahas: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'haha')`,
         liked: exists(
           db
             .select()
@@ -66,27 +65,29 @@ export default defineEventHandler(async (event) => {
       })
       .from(posts)
       .leftJoin(users, eq(users.id, posts.authorId))
-      .orderBy(desc(posts.id), desc(posts.createdAt)) // Using 'id' as a tiebreaker
-      .limit(Number(size) + 1) // Fetch one extra to check if there's more data
+      .orderBy(desc(posts.id), desc(posts.createdAt))
+      .limit(Number(size) + 1)
 
     if (cursor) {
       const [cursorCreatedAt, cursorId] = cursor.toString().split('_')
+
+      const cursorDate = (new Date(parseInt(cursorCreatedAt) * 1000)).toISOString()
+
       query = query.where(
         or(
-          sql`${posts.createdAt} < ${cursorCreatedAt}`,
-          sql`${posts.createdAt} = ${cursorCreatedAt} AND ${posts.id} < ${cursorId}`,
+          sql`${posts.id} < ${cursorId}`, // Prioritize `id` comparison first
+          sql`${posts.createdAt} < ${cursorDate} AND ${posts.id} < ${cursorId}`, // Use `createdAt` for tie-breaking if needed
         ),
       ) as typeof query
     }
 
-    const results = await query.all()
+    const results = await query.execute() // Using execute() instead of all()
 
     const aggregatedResults = results
       .map(({ post, user, likes, hahas, liked, hahaed }) => {
         if (!user) {
           return null
         }
-
         return {
           ...post,
           author: {
@@ -98,8 +99,8 @@ export default defineEventHandler(async (event) => {
             hahas,
           },
           currentUserReaction: {
-            liked: !!liked, // Cast to boolean
-            hahaed: !!hahaed, // Cast to boolean
+            liked: !!liked,
+            hahaed: !!hahaed,
           },
         }
       })
@@ -108,17 +109,15 @@ export default defineEventHandler(async (event) => {
     let nextCursor = null
 
     if (!cursor || results.length > Number(size)) {
-      // If we fetched more than requested, there are more results available
       const lastResult = aggregatedResults[aggregatedResults.length - 1]
       const dateObject = lastResult
         ? new Date(lastResult.createdAt)
         : new Date()
       const unixTimestamp = Math.floor(dateObject.getTime() / 1000)
 
-      nextCursor
-        = lastResult && lastResult.createdAt && lastResult.id
-          ? `${unixTimestamp}_${lastResult.id}` // Constructing next cursor
-          : null
+      nextCursor = lastResult && lastResult.createdAt && lastResult.id
+        ? `${unixTimestamp}_${lastResult.id}`
+        : null
     }
 
     return {

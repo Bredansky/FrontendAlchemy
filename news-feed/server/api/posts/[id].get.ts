@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
       .select()
       .from(posts)
       .where(eq(posts.id, parseInt(postId)))
-      .get()
+      .execute()
     return { post: postsResp }
   }
   catch (e: unknown) {
