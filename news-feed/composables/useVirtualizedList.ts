@@ -125,6 +125,7 @@ export function useVirtualizedList({
   // IntersectionObserver for dynamic loading
   const setupIntersectionObserver = () => {
     intersectionObserver = new IntersectionObserver((entries) => {
+      console.log(entries[0].isIntersecting)
       if (entries[0].isIntersecting && !loading.value) {
         fetchPosts(cursor.value)
       }
@@ -179,7 +180,12 @@ export function useVirtualizedList({
     // TODO: No magic numbers
     // TODO: Add to some sort of measurments config or something in utils
     // TODO: Set those values to the specific components as well to sctrictly control them
-    rootHeight.value = vh - (root.value?.offsetWidth || 0 < 768 ? 41 : 41 + 167)
+
+    // 167 height of posting card
+    // 41 height of header
+    // 768 is a mobile width breakpoint
+
+    rootHeight.value = vh - ((root.value?.offsetWidth || 0) < 768 ? 41 : 41 + 167)
   }
 
   const viewportHeight = computed(() => {
