@@ -26,3 +26,6 @@ logs
 # Database
 sqlite.db
 .drizzle
+
+#ESLint
+.eslintcache

@@ -5,9 +5,10 @@
     class="overflow-auto"
   >
     <div
+      v-if="!loading"
       ref="viewport"
       :style="viewportStyle"
-      class="mx-auto min-w-80 max-w-screen-xl border border-t-0 border-gray-300"
+      :class="containerStyle"
     >
       <div
         :style="spacerStyle"
@@ -21,10 +22,11 @@
         />
       </div>
     </div>
-    <div v-if="loading">
+    <div v-else>
       <SkeletonLoader
         v-for="i in 4"
         :key="'loader' + i"
+        :class="containerStyle"
       />
     </div>
     <div
@@ -81,6 +83,8 @@ const viewportStyle = computed(() => ({
 const spacerStyle = computed(() => ({
   transform: `translateY(${offsetY.value}px)`,
 }))
+
+const containerStyle = 'mx-auto min-w-80 max-w-screen-xl border border-t-0 border-gray-300'
 
 defineExpose({ refreshPosts })
 </script>
