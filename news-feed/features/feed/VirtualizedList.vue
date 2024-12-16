@@ -5,12 +5,12 @@
     class="overflow-auto"
   >
     <div
-      v-if="!loading"
       ref="viewport"
       :style="viewportStyle"
       :class="containerStyle"
     >
       <div
+        v-if="!loading"
         :style="spacerStyle"
       >
         <FeedPost
@@ -21,13 +21,13 @@
           @resize="handlePostResize"
         />
       </div>
-    </div>
-    <div v-else>
-      <SkeletonLoader
-        v-for="i in 4"
-        :key="'loader' + i"
-        :class="containerStyle"
-      />
+      <div v-else>
+        <SkeletonLoader
+          v-for="i in 4"
+          :key="'loader' + i"
+          :class="containerStyle"
+        />
+      </div>
     </div>
     <div
       ref="sentinel"
