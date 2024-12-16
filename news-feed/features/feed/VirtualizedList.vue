@@ -70,6 +70,11 @@ const {
   root,
 })
 
+watch(visibleItems, (newX) => {
+  // New Visible Items should trigger get reaction API call
+  // Do I need to get initial reactions?
+})
+
 const rootStyle = computed(() => {
   return {
     height: `${rootHeight.value}px`,

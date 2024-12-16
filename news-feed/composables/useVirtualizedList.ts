@@ -125,7 +125,6 @@ export function useVirtualizedList({
   // IntersectionObserver for dynamic loading
   const setupIntersectionObserver = () => {
     intersectionObserver = new IntersectionObserver((entries) => {
-      console.log(entries[0].isIntersecting)
       if (entries[0].isIntersecting && !loading.value) {
         fetchPosts(cursor.value)
       }
