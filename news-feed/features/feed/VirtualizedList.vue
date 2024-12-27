@@ -70,9 +70,27 @@ const {
   root,
 })
 
-watch(visibleItems, (newX) => {
-  // New Visible Items should trigger get reaction API call
-  // Do I need to get initial reactions?
+// TODO: Define on a backend level
+interface Reaction {
+  postId: number
+  reactions: {
+    like: number
+    haha: number
+  }
+}
+
+watch(visibleItems, (items) => {
+  fetch(`/api/reactions?ids=${items.map(i => i.id)}`).then((response) => {
+    return response.json()
+  }).then((results: { reactions: Reaction[] }) => {
+    items.forEach((item) => {
+      const reaction = results.reactions.find(reaction => reaction.postId === item.id)
+      if (reaction && reaction.reactions) {
+        item.reactions.likes = reaction.reactions.like || 0
+        item.reactions.hahas = reaction.reactions.haha || 0
+      }
+    })
+  })
 })
 
 const rootStyle = computed(() => {

@@ -67,7 +67,7 @@
           'bg-gray-200 text-gray-700': !userReactions.liked,
         }"
         class="rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        @click="toggleReaction('liked')"
+        @click="toggleReaction('like')"
       >
         👍 {{ postReactions.likes }}
       </button>
@@ -77,7 +77,7 @@
           'bg-gray-200 text-gray-700': !userReactions.hahaed,
         }"
         class="rounded-md px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        @click="toggleReaction('hahaed')"
+        @click="toggleReaction('haha')"
       >
         😂 {{ postReactions.hahas }}
       </button>

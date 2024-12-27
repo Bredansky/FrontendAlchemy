@@ -8,6 +8,7 @@ import {
 } from '@/db/schema'
 import { db } from '@/db'
 
+// TODO: Move this to a shared file
 export interface AuthoredPost extends SelectPost {
   author: Pick<SelectUser, 'nickname' | 'profilePhotoUrl'>
   reactions: {
@@ -36,8 +37,6 @@ export default defineEventHandler(async (event) => {
       .select({
         post: posts,
         user: users,
-        likes: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'like')`,
-        hahas: sql<number>`(SELECT COUNT(*) FROM ${reactions} WHERE ${reactions.postId} = ${posts.id} AND ${reactions.type} = 'haha')`,
         liked: exists(
           db
             .select()
@@ -46,6 +45,7 @@ export default defineEventHandler(async (event) => {
               and(
                 eq(reactions.postId, posts.id),
                 eq(reactions.userId, validUserId),
+                // TODO: type 'likes' should be enum
                 eq(reactions.type, 'like'),
               ),
             ),
@@ -58,6 +58,7 @@ export default defineEventHandler(async (event) => {
               and(
                 eq(reactions.postId, posts.id),
                 eq(reactions.userId, validUserId),
+                // TODO: type 'hahas' should be enum
                 eq(reactions.type, 'haha'),
               ),
             ),
@@ -84,7 +85,7 @@ export default defineEventHandler(async (event) => {
     const results = await query.execute() // Using execute() instead of all()
 
     const aggregatedResults = results
-      .map(({ post, user, likes, hahas, liked, hahaed }) => {
+      .map(({ post, user, liked, hahaed }) => {
         if (!user) {
           return null
         }
@@ -93,10 +94,6 @@ export default defineEventHandler(async (event) => {
           author: {
             nickname: user.nickname,
             profilePhotoUrl: user.profilePhotoUrl,
-          },
-          reactions: {
-            likes,
-            hahas,
           },
           currentUserReaction: {
             liked: !!liked,

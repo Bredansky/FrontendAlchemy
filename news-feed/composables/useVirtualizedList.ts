@@ -56,6 +56,10 @@ export function useVirtualizedList({
         ...data.posts.map(post => ({
           ...post,
           height: calculatePostHeight(post, viewPortWidth.value),
+          reactions: {
+            likes: 0,
+            hahas: 0,
+          },
         })),
       ]
 

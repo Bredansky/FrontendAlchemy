@@ -1,46 +1,43 @@
 import type { AuthoredPostWithHeight } from '~/features/feed/FeedPost.vue'
 
 export function usePostReactions(post: AuthoredPostWithHeight, userId: string) {
-  const userReactions = ref({
-    liked: post.currentUserReaction.liked,
-    hahaed: post.currentUserReaction.hahaed,
-  })
+  const userReactions = post.currentUserReaction
 
-  const postReactions = ref({
-    likes: post.reactions.likes,
-    hahas: post.reactions.hahas,
-  })
+  const postReactions = post.reactions
 
-  const toggleReaction = async (reactionType: 'liked' | 'hahaed') => {
+  const toggleReaction = async (reactionType: 'like' | 'haha') => {
+    const reactionMap: { [key in 'like' | 'haha']: 'liked' | 'hahaed' } = {
+      like: 'liked',
+      haha: 'hahaed',
+    }
     try {
-      const isActive = userReactions.value[reactionType]
-      const action = isActive ? 'unreact' : 'react'
+      const isActive = userReactions[reactionMap[reactionType]]
+      const action = isActive ? 'remove' : 'add'
 
-      if (reactionType === 'liked') {
-        postReactions.value.likes += isActive ? -1 : 1
-        userReactions.value.liked = !isActive
+      if (reactionType === 'like') {
+        postReactions.likes += isActive ? -1 : 1
+        userReactions.liked = !isActive
       }
-      else if (reactionType === 'hahaed') {
-        postReactions.value.hahas += isActive ? -1 : 1
-        userReactions.value.hahaed = !isActive
+      else if (reactionType === 'haha') {
+        postReactions.hahas += isActive ? -1 : 1
+        userReactions.hahaed = !isActive
       }
 
-      await $fetch(`/api/posts/${post.id}/react`, {
-        method: 'PUT',
-        body: JSON.stringify({ action, reactionType, userId }),
+      await $fetch(`/api/reactions`, {
+        method: 'POST',
+        body: JSON.stringify({ action, reactionType, userId, postId: post.id }),
       })
     }
     catch (error) {
       console.error(`Error toggling ${reactionType} reaction:`, error)
 
-      // Revert the optimistic update if the API call fails
-      if (reactionType === 'liked') {
-        postReactions.value.likes += userReactions.value.liked ? -1 : 1
-        userReactions.value.liked = !userReactions.value.liked
+      if (reactionType === 'like') {
+        postReactions.likes += userReactions.liked ? -1 : 1
+        userReactions.liked = !userReactions.liked
       }
-      else if (reactionType === 'hahaed') {
-        postReactions.value.hahas += userReactions.value.hahaed ? -1 : 1
-        userReactions.value.hahaed = !userReactions.value.hahaed
+      else if (reactionType === 'haha') {
+        postReactions.hahas += userReactions.hahaed ? -1 : 1
+        userReactions.hahaed = !userReactions.hahaed
       }
     }
   }
